@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+server.log
+server.error.log
+
+# SSL certificates (local only)
+ssl/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.tar.gz
+
+# Environment variables
+.env
+.env.local
+
+# Claude
+.claude/

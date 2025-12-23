@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>대화 번역기</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 상단 컨트롤 패널 -->
+        <div class="control-panel">
+            <!-- 메인 헤더 (1줄) -->
+            <div class="main-header">
+                <h1><span class="paw-icon">🐾</span> 실시간 대화 번역기</h1>
+                <div class="header-controls">
+                    <select id="audioSource" class="audio-select-compact">
+                        <option value="">🎧 오디오 장치 선택...</option>
+                    </select>
+                    <button onclick="refreshAudioDevices()" class="icon-btn" title="새로고침">🔄</button>
+                    <button onclick="showSetupGuide()" class="icon-btn" title="설정 가이드">📖</button>
+                    <button onclick="toggleNetworkInfo()" class="icon-btn" id="networkToggleBtn" title="다른 기기">📱</button>
+                    <button onclick="toggleShareLink()" class="icon-btn" id="shareToggleBtn" title="외부 공유">🔗</button>
+                    <button onclick="toggleApiKeyInput()" class="icon-btn" id="toggleApiBtn" title="API 키">🔑</button>
+                </div>
+            </div>
+
+            <!-- API 키 입력 섹션 -->
+            <div class="api-key-compact" id="apiKeySection" style="display: none;">
+                <input
+                    type="password"
+                    id="deeplApiKey"
+                    placeholder="DeepL API 키 입력"
+                    class="api-input-compact"
+                >
+                <button onclick="saveDeepLApiKey()" class="api-save-btn">저장</button>
+                <span id="apiKeyStatus" class="api-status"></span>
+            </div>
+
+            <!-- 외부 공유 섹션 -->
+            <div class="network-info" id="shareSection" style="display: none;">
+                <div class="network-header">
+                    <strong>🌐 외부 공유</strong>
+                    <button onclick="toggleShareLink()" class="network-close-btn">✕</button>
+                </div>
+                <div id="shareContent">
+                    <p style="font-size: 11px; color: #6b7280; margin-bottom: 8px;">인터넷으로 링크를 공유하여 어디서나 접속할 수 있습니다.</p>
+                    <button onclick="startTunnel()" id="tunnelStartBtn" class="action-btn" style="width: 100%;">🚀 공유 링크 생성</button>
+                </div>
+                <div id="shareUrl" style="display: none; margin-top: 8px;">
+                    <div class="network-address-item" style="background: #dbeafe; border: 1px solid #3b82f6;">
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-size: 10px; color: #1d4ed8;">🌐 공유 링크 (마이크 사용 가능)</div>
+                            <div id="publicUrlText" style="font-family: monospace; font-size: 11px; margin-top: 2px; word-break: break-all;"></div>
+                        </div>
+                        <button onclick="copyPublicUrl()" class="copy-btn">복사</button>
+                    </div>
+                    <div id="shareQrCode" style="text-align: center; margin-top: 8px;"></div>
+                    <button onclick="stopTunnel()" class="action-btn clear" style="width: 100%; margin-top: 8px;">🔌 공유 중지</button>
+                </div>
+            </div>
+
+            <!-- 네트워크 정보 섹션 -->
+            <div class="network-info" id="networkInfo" style="display: none;">
+                <div class="network-header">
+                    <strong>다른 기기 접속</strong>
+                    <button onclick="toggleNetworkInfo()" class="network-close-btn">✕</button>
+                </div>
+                <div id="networkAddresses"></div>
+                <div id="qrCode" style="text-align: center; margin-top: 6px;"></div>
+            </div>
+
+            <!-- 컴팩트 컨트롤 (1줄) -->
+            <div class="compact-controls">
+                <button id="listenKoBtn" onclick="setListenLanguage('ko')" class="lang-btn-compact">
+                    🎧 한국어 듣기 (9)
+                </button>
+                <button id="listenJaBtn" onclick="setListenLanguage('ja')" class="lang-btn-compact active">
+                    🎧 일본어 듣기 (0)
+                </button>
+                <button id="startBtn" onclick="startListening()" class="start-btn-compact">
+                    시작 (-)
+                </button>
+                <button id="stopBtn" onclick="stopListening()" class="stop-btn-compact" disabled>
+                    중지 (=)
+                </button>
+                <div class="status-text" id="status">
+                    <span class="status-dot">●</span>
+                    <span class="status-label">대기 중</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 현재 자막 표시 (간결한 1줄) -->
+        <div class="current-subtitle">
+            <div class="current-subtitle-content">
+                <span class="current-source" id="sourceText">원문</span>
+                <span class="divider">→</span>
+                <span class="current-target" id="targetText">번역</span>
+            </div>
+        </div>
+
+        <!-- 번역 히스토리 -->
+        <div class="history-section">
+            <div class="history-header">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <h2>대화 기록</h2>
+                    <input type="text" id="searchInput" class="search-input" placeholder="검색...">
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button onclick="exportHistory()" class="action-btn">내보내기</button>
+                    <button onclick="copyAllHistory()" class="action-btn">전체 복사</button>
+                    <button onclick="clearHistory()" class="action-btn clear">지우기</button>
+                </div>
+            </div>
+
+            <!-- 세션 탭 -->
+            <div class="session-tabs-container">
+                <div class="session-tabs-label">이전 대화:</div>
+                <div class="session-tabs" id="sessionTabs">
+                    <div style="font-size: 11px; color: #9ca3af; padding: 4px 0;">저장된 세션 없음</div>
+                </div>
+            </div>
+            <div class="history-table-container" id="historyContainer">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 30px;"></th>
+                            <th style="width: 80px;">시간</th>
+                            <th style="width: 45%;">원문</th>
+                            <th style="width: 45%;">번역</th>
+                            <th style="width: 50px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="history">
+                        <!-- 번역 내역이 여기에 추가됩니다 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 플로팅 자막 (화면 상단에 표시) -->
+    <div class="floating-subtitle" id="floatingSubtitle">
+        <div class="floating-korean" id="floatingTarget"></div>
+    </div>
+
+    <!-- 설정 가이드 모달 -->
+    <div class="modal" id="setupModal">
+        <div class="modal-content">
+            <span class="close" onclick="closeSetupGuide()">&times;</span>
+            <h2>🎯 Zoom/Meet 대화 실시간 번역 설정</h2>
+
+            <div style="background: #fef3c7; padding: 20px; border-radius: 10px; margin-bottom: 25px; border-left: 5px solid #f59e0b;">
+                <h3 style="color: #92400e; margin-bottom: 10px;">💡 핵심 원리</h3>
+                <p style="color: #92400e; line-height: 1.8; margin: 0;">
+                    Zoom/Meet에서 나오는 <strong>상대방 목소리</strong>를 이 번역기가 들을 수 있게 만드는 것입니다!<br>
+                    <strong>BlackHole</strong>은 Mac 내부 소리를 다른 앱으로 전달하는 가상 오디오 케이블입니다.
+                </p>
+            </div>
+
+            <div class="guide-step">
+                <h3>📦 1단계: BlackHole 설치 (5분)</h3>
+                <p><strong>BlackHole이 뭔가요?</strong> Mac 내부 소리를 녹음할 수 있게 해주는 무료 프로그램입니다.</p>
+
+                <p style="margin-top: 15px;"><strong>설치 방법:</strong></p>
+                <ol style="line-height: 2;">
+                    <li><strong>터미널</strong> 앱을 엽니다 (Spotlight에서 "터미널" 검색)</li>
+                    <li>아래 명령어를 <strong>복사</strong>해서 터미널에 붙여넣고 <strong>Enter</strong></li>
+                </ol>
+                <div class="code-box">
+                    <code>brew install blackhole-2ch</code>
+                    <button onclick="copyToClipboard('brew install blackhole-2ch')" class="copy-btn">📋 복사</button>
+                </div>
+                <p class="note">⚠️ "brew: command not found" 오류가 나면 먼저 Homebrew를 설치하세요:</p>
+                <div class="code-box" style="margin-top: 10px;">
+                    <code>/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"</code>
+                    <button onclick="copyToClipboard('/bin/bash -c \\"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\\"')" class="copy-btn">📋 복사</button>
+                </div>
+                <p class="note" style="margin-top: 15px;">✅ 설치가 끝나면 <strong>Mac을 재부팅</strong>하세요!</p>
+            </div>
+
+            <div class="guide-step">
+                <h3>🔧 2단계: 오디오 믹서 설정 (3분)</h3>
+                <p><strong>무엇을 하는 건가요?</strong> 소리가 <strong>스피커</strong>와 <strong>BlackHole</strong> 양쪽으로 동시에 나가게 만듭니다.</p>
+
+                <ol style="line-height: 2.2;">
+                    <li>
+                        <strong>Spotlight 검색</strong> (⌘ + Space) → <strong>"Audio MIDI"</strong> 입력 → <strong>Audio MIDI Setup</strong> 앱 실행
+                        <p class="note" style="margin: 8px 0;">💡 정확한 이름: "오디오 MIDI 설정" 또는 "Audio MIDI Setup"</p>
+                    </li>
+                    <li>
+                        왼쪽 하단의 <strong>➕ 버튼</strong>을 클릭
+                    </li>
+                    <li>
+                        <strong>"다중 출력 장치 생성"</strong> (Create Multi-Output Device) 클릭
+                    </li>
+                    <li>
+                        오른쪽에 나타나는 목록에서 다음 <strong>2개</strong>를 체크:
+                        <ul style="margin-top: 10px;">
+                            <li>✅ <strong>BlackHole 2ch</strong></li>
+                            <li>✅ <strong>MacBook Pro 스피커</strong> (또는 사용 중인 스피커/헤드폰)</li>
+                        </ul>
+                        <p class="note" style="margin-top: 10px;">⚠️ 중요: <strong>BlackHole을 먼저</strong>, 스피커를 두 번째로 체크하세요!</p>
+                    </li>
+                    <li>
+                        (선택) 이름을 더블클릭해서 <strong>"번역기용"</strong>으로 변경
+                    </li>
+                </ol>
+
+                <div class="note" style="margin-top: 15px; background: #dcfce7; border-left-color: #10b981;">
+                    ✅ <strong>확인 방법:</strong> "다중 출력 장치" 또는 "번역기용"이 목록에 보이면 성공!
+                </div>
+            </div>
+
+            <div class="guide-step">
+                <h3>🎤 3단계: Zoom/Meet 스피커 변경 (1분)</h3>
+                <p><strong>무엇을 하는 건가요?</strong> Zoom/Meet 소리가 BlackHole로도 가게 만듭니다.</p>
+
+                <div style="background: #eff6ff; padding: 15px; border-radius: 10px; margin: 15px 0;">
+                    <h4 style="color: #3b82f6; margin: 0 0 10px 0;">📹 Zoom 설정</h4>
+                    <ol style="line-height: 2;">
+                        <li>Zoom 앱 실행</li>
+                        <li>우측 상단 <strong>톱니바퀴 ⚙️</strong> → <strong>오디오</strong></li>
+                        <li><strong>스피커</strong> 드롭다운 → <strong>"다중 출력 장치"</strong> 또는 <strong>"번역기용"</strong> 선택</li>
+                    </ol>
+                    <p class="note">💡 마이크는 <strong>그대로</strong> 두세요! 변경 금지!</p>
+                </div>
+
+                <div style="background: #f0fdf4; padding: 15px; border-radius: 10px; margin: 15px 0;">
+                    <h4 style="color: #34a853; margin: 0 0 10px 0;">📹 Google Meet 설정</h4>
+                    <ol style="line-height: 2;">
+                        <li>Meet 회의 입장 후</li>
+                        <li>우측 하단 <strong>점 3개 (⋮)</strong> → <strong>설정</strong></li>
+                        <li><strong>오디오</strong> 탭</li>
+                        <li><strong>스피커</strong> → <strong>"다중 출력 장치"</strong> 또는 <strong>"번역기용"</strong> 선택</li>
+                    </ol>
+                    <p class="note">💡 마이크는 <strong>그대로</strong> 두세요!</p>
+                </div>
+            </div>
+
+            <div class="guide-step">
+                <h3>🎯 4단계: 번역기 실행 (30초)</h3>
+                <ol style="line-height: 2.5;">
+                    <li>이 페이지 상단의 <strong>"🎧 오디오 입력 소스"</strong>에서</li>
+                    <li><strong>"BlackHole 2ch ⭐ (권장)"</strong> 선택</li>
+                    <li>상대방 언어 선택: <strong>🇯🇵 일본어 듣기</strong> 또는 <strong>🇰🇷 한국어 듣기</strong></li>
+                    <li><strong>"🎤 시작하기"</strong> 버튼 클릭!</li>
+                </ol>
+            </div>
+
+            <div class="guide-success">
+                🎉 완료! 이제 Zoom/Meet에서 상대방이 말하면 실시간으로 번역됩니다!
+            </div>
+
+            <div class="guide-step" style="margin-top: 25px; background: #fee2e2; border-left-color: #ef4444;">
+                <h3 style="color: #dc2626;">❓ 안 될 때 체크리스트</h3>
+                <ul style="line-height: 2;">
+                    <li>✅ Mac을 재부팅 했나요?</li>
+                    <li>✅ Multi-Output Device에서 <strong>BlackHole과 스피커 둘 다</strong> 체크했나요?</li>
+                    <li>✅ Zoom/Meet 스피커가 "다중 출력 장치"로 설정되었나요?</li>
+                    <li>✅ 번역기에서 BlackHole 2ch를 선택했나요?</li>
+                    <li>✅ 상대방 언어(일본어/한국어)를 올바르게 선택했나요?</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

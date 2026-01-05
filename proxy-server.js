@@ -402,48 +402,59 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// SSL 인증서 경로
-const sslDir = path.join(__dirname, 'ssl');
-const keyPath = path.join(sslDir, 'key.pem');
-const certPath = path.join(sslDir, 'cert.pem');
+// 클라우드 환경 감지 (Koyeb, Heroku 등)
+const isCloudEnvironment = process.env.PORT && !process.env.LOCAL_DEV;
 
-// HTTP 서버 시작
-http.createServer(app).listen(HTTP_PORT, '0.0.0.0', () => {
-    console.log(`✅ HTTP 서버가 포트 ${HTTP_PORT}에서 실행 중입니다.`);
-    console.log(`   http://localhost:${HTTP_PORT}`);
-});
-
-// HTTPS 서버 시작 (SSL 인증서가 있는 경우)
-if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
-    try {
-        const sslOptions = {
-            key: fs.readFileSync(keyPath),
-            cert: fs.readFileSync(certPath)
-        };
-
-        https.createServer(sslOptions, app).listen(HTTPS_PORT, '0.0.0.0', () => {
-            console.log(`✅ HTTPS 서버가 포트 ${HTTPS_PORT}에서 실행 중입니다.`);
-            console.log(`   https://localhost:${HTTPS_PORT}`);
-
-            // 로컬 IP 주소 출력
-            const addresses = getLocalAddresses();
-            if (addresses.length > 0) {
-                console.log('\n📱 다른 기기에서 접속 (마이크 사용 가능):');
-                addresses.forEach(addr => {
-                    console.log(`   ${addr.interface}: ${addr.httpsUrl}`);
-                });
-                console.log('\n⚠️  브라우저에서 "안전하지 않음" 경고가 나타나면:');
-                console.log('   → "고급" → "안전하지 않은 사이트로 이동" 클릭');
-            }
-        });
-    } catch (error) {
-        console.error('⚠️ HTTPS 서버 시작 실패:', error.message);
-        console.log('   SSL 인증서를 생성하려면 다음 명령어를 실행하세요:');
-        console.log('   openssl req -x509 -newkey rsa:4096 -keyout ssl/key.pem -out ssl/cert.pem -days 365 -nodes');
-    }
+if (isCloudEnvironment) {
+    // 클라우드 환경: HTTP 서버만 시작
+    http.createServer(app).listen(HTTP_PORT, '0.0.0.0', () => {
+        console.log(`✅ 서버가 포트 ${HTTP_PORT}에서 실행 중입니다 (클라우드 모드).`);
+        console.log(`   환경: ${process.env.NODE_ENV || 'production'}`);
+    });
 } else {
-    console.log('\n⚠️  SSL 인증서가 없습니다. HTTPS 서버를 시작하지 않습니다.');
-    console.log('   다른 기기에서 마이크를 사용하려면 SSL 인증서가 필요합니다.');
-    console.log('   인증서 생성 명령어:');
-    console.log('   mkdir -p ssl && openssl req -x509 -newkey rsa:4096 -keyout ssl/key.pem -out ssl/cert.pem -days 365 -nodes -subj "/CN=localhost"');
+    // 로컬 환경: HTTP와 HTTPS 서버 모두 시작
+    const sslDir = path.join(__dirname, 'ssl');
+    const keyPath = path.join(sslDir, 'key.pem');
+    const certPath = path.join(sslDir, 'cert.pem');
+
+    // HTTP 서버 시작
+    http.createServer(app).listen(HTTP_PORT, '0.0.0.0', () => {
+        console.log(`✅ HTTP 서버가 포트 ${HTTP_PORT}에서 실행 중입니다.`);
+        console.log(`   http://localhost:${HTTP_PORT}`);
+    });
+
+    // HTTPS 서버 시작 (SSL 인증서가 있는 경우)
+    if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
+        try {
+            const sslOptions = {
+                key: fs.readFileSync(keyPath),
+                cert: fs.readFileSync(certPath)
+            };
+
+            https.createServer(sslOptions, app).listen(HTTPS_PORT, '0.0.0.0', () => {
+                console.log(`✅ HTTPS 서버가 포트 ${HTTPS_PORT}에서 실행 중입니다.`);
+                console.log(`   https://localhost:${HTTPS_PORT}`);
+
+                // 로컬 IP 주소 출력
+                const addresses = getLocalAddresses();
+                if (addresses.length > 0) {
+                    console.log('\n📱 다른 기기에서 접속 (마이크 사용 가능):');
+                    addresses.forEach(addr => {
+                        console.log(`   ${addr.interface}: ${addr.httpsUrl}`);
+                    });
+                    console.log('\n⚠️  브라우저에서 "안전하지 않음" 경고가 나타나면:');
+                    console.log('   → "고급" → "안전하지 않은 사이트로 이동" 클릭');
+                }
+            });
+        } catch (error) {
+            console.error('⚠️ HTTPS 서버 시작 실패:', error.message);
+            console.log('   SSL 인증서를 생성하려면 다음 명령어를 실행하세요:');
+            console.log('   openssl req -x509 -newkey rsa:4096 -keyout ssl/key.pem -out ssl/cert.pem -days 365 -nodes');
+        }
+    } else {
+        console.log('\n⚠️  SSL 인증서가 없습니다. HTTPS 서버를 시작하지 않습니다.');
+        console.log('   다른 기기에서 마이크를 사용하려면 SSL 인증서가 필요합니다.');
+        console.log('   인증서 생성 명령어:');
+        console.log('   mkdir -p ssl && openssl req -x509 -newkey rsa:4096 -keyout ssl/key.pem -out ssl/cert.pem -days 365 -nodes -subj "/CN=localhost"');
+    }
 }

@@ -3,10 +3,19 @@ const cors = require('cors');
 const path = require('path');
 const axios = require('axios');
 const fs = require('fs');
+const https = require('https');
+const http = require('http');
+const os = require('os');
+const { spawn } = require('child_process');
 
 const app = express();
 // Koyeb/클라우드 환경에서는 PORT 환경변수 사용
-const PORT = process.env.PORT || 3000;
+const HTTP_PORT = process.env.PORT || 3000;
+const HTTPS_PORT = process.env.HTTPS_PORT || 3443;
+
+// ngrok 프로세스 관리
+let ngrokProcess = null;
+let publicUrl = null;
 
 // 모든 출처에서의 요청 허용
 app.use(cors());
@@ -237,20 +246,204 @@ app.post('/api/translate', async (req, res) => {
     }
 });
 
-// 네트워크 정보 API (클라우드 배포용)
+// 로컬 IP 주소 가져오기 함수
+function getLocalAddresses() {
+    const interfaces = os.networkInterfaces();
+    const addresses = [];
+
+    for (const name of Object.keys(interfaces)) {
+        for (const iface of interfaces[name]) {
+            // IPv4이고 내부 주소가 아닌 경우만
+            if (iface.family === 'IPv4' && !iface.internal) {
+                addresses.push({
+                    interface: name,
+                    ip: iface.address,
+                    httpUrl: `http://${iface.address}:${HTTP_PORT}`,
+                    httpsUrl: `https://${iface.address}:${HTTPS_PORT}`
+                });
+            }
+        }
+    }
+
+    return addresses;
+}
+
+// 네트워크 정보 API
 app.get('/api/network-info', (req, res) => {
+    const localAddresses = getLocalAddresses();
+
     res.json({
-        port: PORT,
-        environment: process.env.NODE_ENV || 'development'
+        port: HTTP_PORT,
+        httpsPort: HTTPS_PORT,
+        environment: process.env.NODE_ENV || 'development',
+        localAddresses: localAddresses,
+        publicUrl: publicUrl
     });
 });
+
+// 터널 시작 API (ngrok)
+app.post('/api/tunnel/start', async (req, res) => {
+    // 이미 실행 중인 경우
+    if (ngrokProcess && publicUrl) {
+        return res.json({ success: true, url: publicUrl, warning: '이미 실행 중입니다.' });
+    }
+
+    try {
+        // ngrok이 설치되어 있는지 확인
+        const ngrokPath = await findNgrok();
+
+        if (!ngrokPath) {
+            return res.status(400).json({
+                success: false,
+                error: 'ngrok이 설치되어 있지 않습니다. brew install ngrok 또는 https://ngrok.com 에서 설치하세요.'
+            });
+        }
+
+        // ngrok 실행
+        ngrokProcess = spawn(ngrokPath, ['http', HTTPS_PORT.toString(), '--log=stdout']);
+
+        let resolved = false;
+
+        // stdout에서 URL 추출
+        ngrokProcess.stdout.on('data', (data) => {
+            const output = data.toString();
+            console.log('ngrok:', output);
+
+            // URL 추출 (url= 형식)
+            const urlMatch = output.match(/url=(https:\/\/[^\s]+)/);
+            if (urlMatch && !resolved) {
+                publicUrl = urlMatch[1];
+                resolved = true;
+                console.log('✅ ngrok 터널 생성:', publicUrl);
+            }
+        });
+
+        ngrokProcess.stderr.on('data', (data) => {
+            console.error('ngrok error:', data.toString());
+        });
+
+        ngrokProcess.on('close', (code) => {
+            console.log('ngrok 프로세스 종료:', code);
+            ngrokProcess = null;
+            publicUrl = null;
+        });
+
+        // URL이 생성될 때까지 대기 (최대 10초)
+        let attempts = 0;
+        while (!publicUrl && attempts < 20) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+            attempts++;
+
+            // ngrok API로 터널 정보 조회 시도
+            if (!publicUrl) {
+                try {
+                    const tunnelRes = await axios.get('http://127.0.0.1:4040/api/tunnels', { timeout: 1000 });
+                    const tunnels = tunnelRes.data.tunnels;
+                    const httpsTunnel = tunnels.find(t => t.proto === 'https');
+                    if (httpsTunnel) {
+                        publicUrl = httpsTunnel.public_url;
+                        console.log('✅ ngrok 터널 생성 (API):', publicUrl);
+                    }
+                } catch (e) {
+                    // API 아직 준비 안됨
+                }
+            }
+        }
+
+        if (publicUrl) {
+            res.json({ success: true, url: publicUrl });
+        } else {
+            res.status(500).json({ success: false, error: '터널 URL을 가져오는데 실패했습니다.' });
+        }
+
+    } catch (error) {
+        console.error('터널 시작 오류:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// 터널 중지 API
+app.post('/api/tunnel/stop', (req, res) => {
+    if (ngrokProcess) {
+        ngrokProcess.kill();
+        ngrokProcess = null;
+        publicUrl = null;
+        console.log('✅ ngrok 터널 종료');
+        res.json({ success: true });
+    } else {
+        res.json({ success: true, message: '실행 중인 터널이 없습니다.' });
+    }
+});
+
+// ngrok 실행 파일 찾기
+async function findNgrok() {
+    const possiblePaths = [
+        '/usr/local/bin/ngrok',
+        '/opt/homebrew/bin/ngrok',
+        process.env.HOME + '/ngrok',
+        'ngrok'  // PATH에서 찾기
+    ];
+
+    for (const ngrokPath of possiblePaths) {
+        try {
+            const { execSync } = require('child_process');
+            execSync(`${ngrokPath} version`, { stdio: 'ignore' });
+            return ngrokPath;
+        } catch (e) {
+            // 이 경로에는 없음
+        }
+    }
+
+    return null;
+}
 
 // 메인 페이지 라우트
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// 서버 시작
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`✅ 서버가 포트 ${PORT}에서 실행 중입니다.`);
+// SSL 인증서 경로
+const sslDir = path.join(__dirname, 'ssl');
+const keyPath = path.join(sslDir, 'key.pem');
+const certPath = path.join(sslDir, 'cert.pem');
+
+// HTTP 서버 시작
+http.createServer(app).listen(HTTP_PORT, '0.0.0.0', () => {
+    console.log(`✅ HTTP 서버가 포트 ${HTTP_PORT}에서 실행 중입니다.`);
+    console.log(`   http://localhost:${HTTP_PORT}`);
 });
+
+// HTTPS 서버 시작 (SSL 인증서가 있는 경우)
+if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
+    try {
+        const sslOptions = {
+            key: fs.readFileSync(keyPath),
+            cert: fs.readFileSync(certPath)
+        };
+
+        https.createServer(sslOptions, app).listen(HTTPS_PORT, '0.0.0.0', () => {
+            console.log(`✅ HTTPS 서버가 포트 ${HTTPS_PORT}에서 실행 중입니다.`);
+            console.log(`   https://localhost:${HTTPS_PORT}`);
+
+            // 로컬 IP 주소 출력
+            const addresses = getLocalAddresses();
+            if (addresses.length > 0) {
+                console.log('\n📱 다른 기기에서 접속 (마이크 사용 가능):');
+                addresses.forEach(addr => {
+                    console.log(`   ${addr.interface}: ${addr.httpsUrl}`);
+                });
+                console.log('\n⚠️  브라우저에서 "안전하지 않음" 경고가 나타나면:');
+                console.log('   → "고급" → "안전하지 않은 사이트로 이동" 클릭');
+            }
+        });
+    } catch (error) {
+        console.error('⚠️ HTTPS 서버 시작 실패:', error.message);
+        console.log('   SSL 인증서를 생성하려면 다음 명령어를 실행하세요:');
+        console.log('   openssl req -x509 -newkey rsa:4096 -keyout ssl/key.pem -out ssl/cert.pem -days 365 -nodes');
+    }
+} else {
+    console.log('\n⚠️  SSL 인증서가 없습니다. HTTPS 서버를 시작하지 않습니다.');
+    console.log('   다른 기기에서 마이크를 사용하려면 SSL 인증서가 필요합니다.');
+    console.log('   인증서 생성 명령어:');
+    console.log('   mkdir -p ssl && openssl req -x509 -newkey rsa:4096 -keyout ssl/key.pem -out ssl/cert.pem -days 365 -nodes -subj "/CN=localhost"');
+}

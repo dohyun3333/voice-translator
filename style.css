@@ -359,7 +359,8 @@ h1 {
     flex: 1;
 }
 
-/* 플로팅 자막 (화면 상단, 간결한 버전) */
+/* 플로팅 자막 (삭제됨 - 필요시 복원 가능) */
+/*
 .floating-subtitle {
     position: fixed;
     top: 16px;
@@ -383,6 +384,7 @@ h1 {
     border-left: 3px solid #10b981;
     backdrop-filter: blur(8px);
 }
+*/
 
 /* 히스토리 섹션 */
 .history-section {

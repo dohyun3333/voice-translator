@@ -619,10 +619,6 @@ async function translateText(sourceText) {
 
         // 결과 표시
         document.getElementById('targetText').textContent = targetText;
-        document.getElementById('floatingTarget').textContent = targetText;
-
-        // 플로팅 자막 표시
-        showFloatingSubtitle();
 
         // 히스토리에 추가 (언어 정보 포함)
         addToHistory(sourceText, targetText, detectedLang);
@@ -685,9 +681,11 @@ function updateStatus(message) {
     console.log('상태 업데이트:', message);
 }
 
-// 플로팅 자막 표시
+// 플로팅 자막 표시 (비활성화됨 - 필요시 복원 가능)
+/*
 function showFloatingSubtitle() {
     const floating = document.getElementById('floatingSubtitle');
+    if (!floating) return;
     floating.style.display = 'block';
 
     // 5초 후 서서히 사라지기
@@ -699,6 +697,7 @@ function showFloatingSubtitle() {
         }, 500);
     }, 5000);
 }
+*/
 
 // 히스토리에 추가
 function addToHistory(sourceText, targetText, detectedLang) {
@@ -966,7 +965,8 @@ function copyToClipboard(text) {
     });
 }
 
-// 플로팅 자막 표시
+// 플로팅 자막 표시 (비활성화됨 - 중복 함수 제거)
+/*
 function showFloatingSubtitle() {
     const floatingSubtitle = document.getElementById('floatingSubtitle');
     if (floatingSubtitle) {
@@ -982,6 +982,7 @@ function showFloatingSubtitle() {
         }, 5000);
     }
 }
+*/
 
 // 모달 외부 클릭 시 닫기
 window.onclick = function(event) {

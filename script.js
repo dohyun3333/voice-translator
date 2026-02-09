@@ -6,7 +6,7 @@ let audioContext = null;
 let selectedDeviceId = localStorage.getItem('selectedAudioDevice') || '';
 let permissionGranted = localStorage.getItem('audioPermissionGranted') === 'true';
 let deeplApiKey = localStorage.getItem('deeplApiKey') || '';
-let listenLanguage = localStorage.getItem('listenLanguage') || 'ja';  // 기본값: 일본어
+let listenLanguage = localStorage.getItem('listenLanguage') || 'ja';  // 기본값: 일본어, 'auto'도 가능
 let historyData = [];  // 현재 세션의 히스토리 데이터 배열
 let historyIdCounter = 0;  // 고유 ID 카운터
 
@@ -68,15 +68,22 @@ function setListenLanguage(lang) {
 
 // 언어 버튼 상태 업데이트
 function updateLanguageButtons() {
+    const autoBtn = document.getElementById('listenAutoBtn');
     const jaBtn = document.getElementById('listenJaBtn');
     const koBtn = document.getElementById('listenKoBtn');
 
-    if (listenLanguage === 'ja') {
+    // 모든 버튼 비활성화
+    autoBtn.classList.remove('active');
+    jaBtn.classList.remove('active');
+    koBtn.classList.remove('active');
+
+    // 선택된 버튼만 활성화
+    if (listenLanguage === 'auto') {
+        autoBtn.classList.add('active');
+    } else if (listenLanguage === 'ja') {
         jaBtn.classList.add('active');
-        koBtn.classList.remove('active');
     } else {
         koBtn.classList.add('active');
-        jaBtn.classList.remove('active');
     }
 }
 
@@ -372,14 +379,26 @@ async function startListening() {
         recognition = new SpeechRecognition();
 
         // 선택된 언어로 음성 인식 설정
-        recognition.lang = listenLanguage === 'ja' ? 'ja-JP' : 'ko-KR';
+        // 자동 모드일 때는 한국어로 인식 (한국어 인식이 더 범용적)
+        if (listenLanguage === 'auto') {
+            recognition.lang = 'ko-KR';
+        } else {
+            recognition.lang = listenLanguage === 'ja' ? 'ja-JP' : 'ko-KR';
+        }
         recognition.continuous = true;  // 연속 인식
         recognition.interimResults = true;  // 중간 결과도 받기
 
         // 음성 인식 이벤트 핸들러
         recognition.onstart = function() {
             isListening = true;
-            const langName = listenLanguage === 'ja' ? '일본어' : '한국어';
+            let langName;
+            if (listenLanguage === 'auto') {
+                langName = '자동 감지';
+            } else if (listenLanguage === 'ja') {
+                langName = '일본어';
+            } else {
+                langName = '한국어';
+            }
             updateStatus(`${langName} 인식 중`);
             document.getElementById('startBtn').disabled = true;
             document.getElementById('stopBtn').disabled = false;
@@ -914,6 +933,12 @@ document.addEventListener('keydown', function(e) {
         }
     }
 
+    // 8 키: 자동 감지
+    if (e.key === '8' && !isInputFocused) {
+        e.preventDefault();
+        setListenLanguage('auto');
+    }
+
     // 9 키: 한국어 듣기
     if (e.key === '9' && !isInputFocused) {
         e.preventDefault();
@@ -1216,43 +1241,131 @@ function saveCurrentSession() {
     console.log('세션 저장:', currentSessionId, '대화 수:', historyData.length);
 }
 
-// 세션 탭 렌더링
+// 세션 탭 렌더링 (카드 형식)
 function renderSessionTabs() {
     const container = document.getElementById('sessionTabs');
     if (!container) return;
 
     if (sessions.length === 0) {
-        container.innerHTML = '<div style="font-size: 11px; color: #9ca3af; padding: 4px 0;">저장된 세션 없음</div>';
+        container.innerHTML = '<div style="font-size: 13px; color: #9ca3af; padding: 12px; text-align: center; background: #f9fafb; border-radius: 8px;">저장된 세션이 없습니다</div>';
         return;
     }
 
-    // 최신순으로 정렬
-    const sortedSessions = [...sessions].sort((a, b) => b.timestamp - a.timestamp);
+    // 별표순, 최신순으로 정렬
+    const sortedSessions = [...sessions].sort((a, b) => {
+        // 별표가 있는 것을 우선
+        if (a.starred && !b.starred) return -1;
+        if (!a.starred && b.starred) return 1;
+        // 그 다음 최신순
+        return b.timestamp - a.timestamp;
+    });
 
     container.innerHTML = sortedSessions.map(session => {
         const date = new Date(session.timestamp);
         const timeStr = `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+        const weekday = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
         const isActive = session.id === currentSessionId;
         const count = session.historyData.length;
+        const title = session.title || generateAutoTitle(session);
+        const starred = session.starred || false;
+
+        // 언어 아이콘
+        let langIcon;
+        if (session.language === 'auto') {
+            langIcon = '🌐 자동';
+        } else if (session.language === 'ja') {
+            langIcon = '🇯🇵→🇰🇷';
+        } else {
+            langIcon = '🇰🇷→🇯🇵';
+        }
+
+        // 첫 대화 미리보기 (있을 때만 표시)
+        let preview = null;
+        if (session.historyData && session.historyData.length > 0 && session.historyData[0] && session.historyData[0].source) {
+            const source = session.historyData[0].source;
+            preview = source.substring(0, 60) + (source.length > 60 ? '...' : '');
+        }
 
         return `
             <div class="session-tab-wrapper">
-                <button
-                    class="session-tab ${isActive ? 'active' : ''}"
-                    onclick="loadSession(${session.id})"
-                    title="${count}개 대화"
-                >
-                    <div class="session-time">${timeStr}</div>
-                    <div class="session-count">${count}</div>
-                </button>
-                <button
-                    class="session-delete-btn"
-                    onclick="deleteSession(${session.id}, event)"
-                    title="세션 삭제"
-                >×</button>
+                <div class="session-card ${isActive ? 'active' : ''} ${starred ? 'starred' : ''}" onclick="loadSession(${session.id})">
+                    <div class="session-card-header">
+                        <div class="session-card-title">${title}</div>
+                        <div class="session-card-actions">
+                            <button class="session-edit-btn"
+                                    onclick="editSessionTitle(${session.id}, event)"
+                                    title="제목 편집">
+                                ✏️
+                            </button>
+                            <button class="session-star-btn ${starred ? 'starred' : ''}"
+                                    onclick="toggleSessionStar(${session.id}, event)"
+                                    title="${starred ? '중요 표시 해제' : '중요 표시'}">
+                                ${starred ? '⭐' : '☆'}
+                            </button>
+                            <button class="session-delete-btn"
+                                    onclick="deleteSession(${session.id}, event)"
+                                    title="세션 삭제">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                    <div class="session-card-meta">
+                        <div class="session-meta-item">
+                            <span>📅</span>
+                            <span>${timeStr} (${weekday})</span>
+                        </div>
+                        <div class="session-meta-item">
+                            <span>${langIcon}</span>
+                        </div>
+                        <div class="session-meta-item">
+                            <span>💬</span>
+                            <span>${count}개</span>
+                        </div>
+                    </div>
+                    ${preview ? `<div class="session-card-preview">"${preview}"</div>` : ''}
+                </div>
             </div>
         `;
     }).join('');
+}
+
+// 자동 제목 생성 (회의록 번호)
+function generateAutoTitle(session) {
+    // 세션 ID를 기반으로 회의록 번호 생성
+    return `회의록 ${session.id}`;
+}
+
+// 세션 중요 표시 토글
+function toggleSessionStar(sessionId, event) {
+    if (event) {
+        event.stopPropagation();
+    }
+
+    const session = sessions.find(s => s.id === sessionId);
+    if (session) {
+        session.starred = !session.starred;
+        localStorage.setItem('chatSessions', JSON.stringify(sessions));
+        renderSessionTabs();
+    }
+}
+
+// 세션 제목 편집
+function editSessionTitle(sessionId, event) {
+    if (event) {
+        event.stopPropagation();
+    }
+
+    const session = sessions.find(s => s.id === sessionId);
+    if (!session) return;
+
+    const currentTitle = session.title || generateAutoTitle(session);
+    const newTitle = prompt('세션 제목을 입력하세요:', currentTitle);
+
+    if (newTitle !== null && newTitle.trim() !== '') {
+        session.title = newTitle.trim();
+        localStorage.setItem('chatSessions', JSON.stringify(sessions));
+        renderSessionTabs();
+    }
 }
 
 // 세션 불러오기

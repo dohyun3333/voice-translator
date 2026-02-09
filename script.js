@@ -570,6 +570,10 @@ function stopListening() {
     // 현재 세션 저장
     saveCurrentSession();
 
+    // 세션 ID 초기화 (다음 시작 시 새 세션 생성)
+    currentSessionId = null;
+    console.log('세션 종료 및 초기화 완료');
+
     updateStatus('중지됨');
     document.getElementById('startBtn').disabled = false;
     document.getElementById('stopBtn').disabled = true;

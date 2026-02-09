@@ -1,5 +1,7 @@
 // 전역 변수
 let recognition;
+let recognitionJA;  // 일본어 인식 (듀얼 모드용)
+let recognitionKO;  // 한국어 인식 (듀얼 모드용)
 let isListening = false;
 let audioStream = null;
 let audioContext = null;
@@ -9,6 +11,10 @@ let deeplApiKey = localStorage.getItem('deeplApiKey') || '';
 let listenLanguage = localStorage.getItem('listenLanguage') || 'ja';  // 기본값: 일본어, 'auto'도 가능
 let historyData = [];  // 현재 세션의 히스토리 데이터 배열
 let historyIdCounter = 0;  // 고유 ID 카운터
+
+// 듀얼 인식 모드 변수
+let dualResults = { ja: null, ko: null };
+let dualResultTimer = null;
 
 // 세션 관리 변수
 let sessions = JSON.parse(localStorage.getItem('chatSessions') || '[]');  // 모든 세션 배열
@@ -374,92 +380,155 @@ async function startListening() {
         const analyser = audioContext.createAnalyser();
         source.connect(analyser);
 
-        // Speech Recognition 초기화
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        recognition = new SpeechRecognition();
 
-        // 선택된 언어로 음성 인식 설정
-        // 자동 모드일 때는 한국어로 인식 (한국어 인식이 더 범용적)
+        // 자동 감지 모드: 듀얼 인식 사용
         if (listenLanguage === 'auto') {
-            recognition.lang = 'ko-KR';
+            console.log('듀얼 인식 모드 시작 (일본어 + 한국어)');
+
+            // 일본어 인식 초기화
+            recognitionJA = new SpeechRecognition();
+            recognitionJA.lang = 'ja-JP';
+            recognitionJA.continuous = true;
+            recognitionJA.interimResults = true;
+
+            // 한국어 인식 초기화
+            recognitionKO = new SpeechRecognition();
+            recognitionKO.lang = 'ko-KR';
+            recognitionKO.continuous = true;
+            recognitionKO.interimResults = true;
+
+            // 듀얼 결과 초기화
+            dualResults = { ja: null, ko: null };
+
+            // 일본어 인식 이벤트
+            recognitionJA.onstart = function() {
+                isListening = true;
+                updateStatus('자동 감지 인식 중');
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+            };
+
+            recognitionJA.onresult = function(event) {
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    if (event.results[i].isFinal) {
+                        const transcript = event.results[i][0].transcript;
+                        const confidence = event.results[i][0].confidence;
+
+                        console.log('일본어 인식:', transcript, '신뢰도:', confidence);
+                        dualResults.ja = { text: transcript, confidence: confidence };
+
+                        // 타이머 설정: 0.5초 대기 후 비교
+                        clearTimeout(dualResultTimer);
+                        dualResultTimer = setTimeout(() => selectBestResult(), 500);
+                    } else {
+                        // 중간 결과 표시
+                        const interimText = event.results[i][0].transcript;
+                        document.getElementById('sourceText').textContent = interimText + ' [일]';
+                    }
+                }
+            };
+
+            recognitionJA.onerror = handleRecognitionError;
+            recognitionJA.onend = function() {
+                if (isListening) {
+                    try {
+                        recognitionJA.start();
+                    } catch (e) {
+                        console.error('일본어 인식 재시작 오류:', e);
+                    }
+                }
+            };
+
+            // 한국어 인식 이벤트
+            recognitionKO.onresult = function(event) {
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    if (event.results[i].isFinal) {
+                        const transcript = event.results[i][0].transcript;
+                        const confidence = event.results[i][0].confidence;
+
+                        console.log('한국어 인식:', transcript, '신뢰도:', confidence);
+                        dualResults.ko = { text: transcript, confidence: confidence };
+
+                        // 타이머 설정: 0.5초 대기 후 비교
+                        clearTimeout(dualResultTimer);
+                        dualResultTimer = setTimeout(() => selectBestResult(), 500);
+                    } else {
+                        // 중간 결과 표시
+                        const interimText = event.results[i][0].transcript;
+                        document.getElementById('sourceText').textContent = interimText + ' [한]';
+                    }
+                }
+            };
+
+            recognitionKO.onerror = handleRecognitionError;
+            recognitionKO.onend = function() {
+                if (isListening) {
+                    try {
+                        recognitionKO.start();
+                    } catch (e) {
+                        console.error('한국어 인식 재시작 오류:', e);
+                    }
+                }
+            };
+
+            // 두 인식 모두 시작
+            recognitionJA.start();
+            recognitionKO.start();
+
         } else {
+            // 단일 언어 모드 (기존 방식)
+            recognition = new SpeechRecognition();
             recognition.lang = listenLanguage === 'ja' ? 'ja-JP' : 'ko-KR';
+            recognition.continuous = true;
+            recognition.interimResults = true;
+
+            recognition.onstart = function() {
+                isListening = true;
+                const langName = listenLanguage === 'ja' ? '일본어' : '한국어';
+                updateStatus(`${langName} 인식 중`);
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+            };
+
+            recognition.onresult = function(event) {
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+
+                if (interimTranscript) {
+                    document.getElementById('sourceText').textContent = interimTranscript;
+                }
+
+                if (finalTranscript) {
+                    document.getElementById('sourceText').textContent = finalTranscript;
+                    translateText(finalTranscript);
+                }
+            };
+
+            recognition.onerror = handleRecognitionError;
+
+            recognition.onend = function() {
+                if (isListening) {
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        console.error('재시작 오류:', e);
+                        stopListening();
+                    }
+                }
+            };
+
+            recognition.start();
         }
-        recognition.continuous = true;  // 연속 인식
-        recognition.interimResults = true;  // 중간 결과도 받기
-
-        // 음성 인식 이벤트 핸들러
-        recognition.onstart = function() {
-            isListening = true;
-            let langName;
-            if (listenLanguage === 'auto') {
-                langName = '자동 감지';
-            } else if (listenLanguage === 'ja') {
-                langName = '일본어';
-            } else {
-                langName = '한국어';
-            }
-            updateStatus(`${langName} 인식 중`);
-            document.getElementById('startBtn').disabled = true;
-            document.getElementById('stopBtn').disabled = false;
-        };
-
-        recognition.onresult = function(event) {
-            let interimTranscript = '';
-            let finalTranscript = '';
-
-            // 인식 결과 처리
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                const transcript = event.results[i][0].transcript;
-                if (event.results[i].isFinal) {
-                    finalTranscript += transcript;
-                } else {
-                    interimTranscript += transcript;
-                }
-            }
-
-            // 원문 텍스트 표시 (중간 결과)
-            if (interimTranscript) {
-                document.getElementById('sourceText').textContent = interimTranscript;
-            }
-
-            // 최종 결과가 있으면 번역 시작
-            if (finalTranscript) {
-                document.getElementById('sourceText').textContent = finalTranscript;
-                translateText(finalTranscript);
-            }
-        };
-
-        recognition.onerror = function(event) {
-            console.error('음성 인식 오류:', event.error);
-
-            if (event.error === 'no-speech') {
-                updateStatus('음성 대기 중...');
-            } else if (event.error === 'audio-capture') {
-                updateStatus('오디오 캡처 오류');
-                alert('⚠️ 오디오 캡처 오류가 발생했습니다.\n\n1. BlackHole이 올바르게 설치되었는지 확인하세요.\n2. 화상회의 앱 오디오가 Multi-Output Device로 설정되었는지 확인하세요.\n3. "설정 가이드"를 참고해주세요.');
-            } else if (event.error === 'not-allowed') {
-                updateStatus('마이크 권한 거부됨');
-                alert('⚠️ 마이크 권한이 거부되었습니다. 브라우저 설정에서 권한을 허용해주세요.');
-            } else {
-                updateStatus('오류: ' + event.error);
-            }
-        };
-
-        recognition.onend = function() {
-            if (isListening) {
-                // 자동으로 다시 시작
-                try {
-                    recognition.start();
-                } catch (e) {
-                    console.error('재시작 오류:', e);
-                    stopListening();
-                }
-            }
-        };
-
-        // 인식 시작
-        recognition.start();
 
     } catch (error) {
         console.error('시작 오류:', error);
@@ -468,10 +537,97 @@ async function startListening() {
     }
 }
 
+// 듀얼 인식 결과 비교 및 선택
+function selectBestResult() {
+    const jaResult = dualResults.ja;
+    const koResult = dualResults.ko;
+
+    // 두 결과 모두 없으면 무시
+    if (!jaResult && !koResult) {
+        return;
+    }
+
+    let selectedResult = null;
+    let selectedLang = null;
+
+    // 둘 중 하나만 있으면 그것을 사용
+    if (jaResult && !koResult) {
+        selectedResult = jaResult;
+        selectedLang = 'ja';
+    } else if (!jaResult && koResult) {
+        selectedResult = koResult;
+        selectedLang = 'ko';
+    } else {
+        // 둘 다 있으면 신뢰도 비교
+        const jaConfidence = jaResult.confidence || 0;
+        const koConfidence = koResult.confidence || 0;
+
+        console.log('신뢰도 비교:', {
+            일본어: `"${jaResult.text}" (${jaConfidence.toFixed(2)})`,
+            한국어: `"${koResult.text}" (${koConfidence.toFixed(2)})`
+        });
+
+        if (jaConfidence > koConfidence) {
+            selectedResult = jaResult;
+            selectedLang = 'ja';
+        } else {
+            selectedResult = koResult;
+            selectedLang = 'ko';
+        }
+    }
+
+    // 선택된 결과로 번역 진행
+    if (selectedResult && selectedResult.text) {
+        const langLabel = selectedLang === 'ja' ? '[일본어]' : '[한국어]';
+        console.log(`✅ 선택됨 ${langLabel}:`, selectedResult.text, `(신뢰도: ${(selectedResult.confidence || 0).toFixed(2)})`);
+
+        document.getElementById('sourceText').textContent = selectedResult.text;
+        translateText(selectedResult.text);
+    }
+
+    // 결과 초기화
+    dualResults = { ja: null, ko: null };
+}
+
+// 공통 음성 인식 오류 핸들러
+function handleRecognitionError(event) {
+    console.error('음성 인식 오류:', event.error);
+
+    if (event.error === 'no-speech') {
+        updateStatus('음성 대기 중...');
+    } else if (event.error === 'audio-capture') {
+        updateStatus('오디오 캡처 오류');
+        alert('⚠️ 오디오 캡처 오류가 발생했습니다.\n\n1. BlackHole이 올바르게 설치되었는지 확인하세요.\n2. 화상회의 앱 오디오가 Multi-Output Device로 설정되었는지 확인하세요.\n3. "설정 가이드"를 참고해주세요.');
+    } else if (event.error === 'not-allowed') {
+        updateStatus('마이크 권한 거부됨');
+        alert('⚠️ 마이크 권한이 거부되었습니다. 브라우저 설정에서 권한을 허용해주세요.');
+    } else {
+        updateStatus('오류: ' + event.error);
+    }
+}
+
 // 음성 인식 중지
 function stopListening() {
     isListening = false;
 
+    // 타이머 정리
+    if (dualResultTimer) {
+        clearTimeout(dualResultTimer);
+        dualResultTimer = null;
+    }
+
+    // 듀얼 인식 중지
+    if (recognitionJA) {
+        recognitionJA.stop();
+        recognitionJA = null;
+    }
+
+    if (recognitionKO) {
+        recognitionKO.stop();
+        recognitionKO = null;
+    }
+
+    // 단일 인식 중지
     if (recognition) {
         recognition.stop();
         recognition = null;
@@ -486,6 +642,9 @@ function stopListening() {
         audioContext.close();
         audioContext = null;
     }
+
+    // 듀얼 결과 초기화
+    dualResults = { ja: null, ko: null };
 
     // 현재 세션 저장
     saveCurrentSession();

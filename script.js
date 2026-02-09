@@ -936,6 +936,16 @@ function exportHistory() {
     alert('✅ 파일이 다운로드되었습니다!');
 }
 
+// 사용법 모달 열기
+function showHowToUse() {
+    document.getElementById('howToUseModal').style.display = 'block';
+}
+
+// 사용법 모달 닫기
+function closeHowToUse() {
+    document.getElementById('howToUseModal').style.display = 'none';
+}
+
 // 설정 가이드 모달 열기
 function showSetupGuide() {
     document.getElementById('setupModal').style.display = 'block';
@@ -975,9 +985,14 @@ function showFloatingSubtitle() {
 
 // 모달 외부 클릭 시 닫기
 window.onclick = function(event) {
-    const modal = document.getElementById('setupModal');
-    if (event.target === modal) {
+    const setupModal = document.getElementById('setupModal');
+    const howToUseModal = document.getElementById('howToUseModal');
+
+    if (event.target === setupModal) {
         closeSetupGuide();
+    }
+    if (event.target === howToUseModal) {
+        closeHowToUse();
     }
 };
 
@@ -1032,6 +1047,7 @@ document.addEventListener('keydown', function(e) {
     // ESC: 모달 닫기
     if (e.key === 'Escape') {
         closeSetupGuide();
+        closeHowToUse();
     }
 });
 

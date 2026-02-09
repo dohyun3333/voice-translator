@@ -1,7 +1,5 @@
 // 전역 변수
 let recognition;
-let recognitionJA;  // 일본어 인식 (듀얼 모드용)
-let recognitionKO;  // 한국어 인식 (듀얼 모드용)
 let isListening = false;
 let audioStream = null;
 let audioContext = null;
@@ -11,10 +9,6 @@ let deeplApiKey = localStorage.getItem('deeplApiKey') || '';
 let listenLanguage = localStorage.getItem('listenLanguage') || 'ja';  // 기본값: 일본어, 'auto'도 가능
 let historyData = [];  // 현재 세션의 히스토리 데이터 배열
 let historyIdCounter = 0;  // 고유 ID 카운터
-
-// 듀얼 인식 모드 변수
-let dualResults = { ja: null, ko: null };
-let dualResultTimer = null;
 
 // 세션 관리 변수
 let sessions = JSON.parse(localStorage.getItem('chatSessions') || '[]');  // 모든 세션 배열
@@ -382,99 +376,68 @@ async function startListening() {
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-        // 자동 감지 모드: 듀얼 인식 사용
+        // 자동 감지 모드: 단일 인식기 + 텍스트 분석
         if (listenLanguage === 'auto') {
-            console.log('듀얼 인식 모드 시작 (일본어 + 한국어)');
+            console.log('자동 감지 모드 시작 (텍스트 분석 기반)');
 
-            // 일본어 인식 초기화
-            recognitionJA = new SpeechRecognition();
-            recognitionJA.lang = 'ja-JP';
-            recognitionJA.continuous = true;
-            recognitionJA.interimResults = true;
+            recognition = new SpeechRecognition();
+            // 한국어 기반으로 인식 (일본어도 잘 잡힘)
+            recognition.lang = 'ko-KR';
+            recognition.continuous = true;
+            recognition.interimResults = true;
 
-            // 한국어 인식 초기화
-            recognitionKO = new SpeechRecognition();
-            recognitionKO.lang = 'ko-KR';
-            recognitionKO.continuous = true;
-            recognitionKO.interimResults = true;
-
-            // 듀얼 결과 초기화
-            dualResults = { ja: null, ko: null };
-
-            // 일본어 인식 이벤트
-            recognitionJA.onstart = function() {
+            recognition.onstart = function() {
                 isListening = true;
                 updateStatus('자동 감지 인식 중');
                 document.getElementById('startBtn').disabled = true;
                 document.getElementById('stopBtn').disabled = false;
             };
 
-            recognitionJA.onresult = function(event) {
+            recognition.onresult = function(event) {
+                let interimTranscript = '';
+                let finalTranscript = '';
+
                 for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
                     if (event.results[i].isFinal) {
-                        const transcript = event.results[i][0].transcript;
-                        const confidence = event.results[i][0].confidence;
-
-                        console.log('일본어 인식:', transcript, '신뢰도:', confidence);
-                        dualResults.ja = { text: transcript, confidence: confidence };
-
-                        // 타이머 설정: 1초 대기 후 비교
-                        clearTimeout(dualResultTimer);
-                        dualResultTimer = setTimeout(() => selectBestResult(), 1000);
+                        finalTranscript += transcript;
                     } else {
-                        // 중간 결과 표시
-                        const interimText = event.results[i][0].transcript;
-                        document.getElementById('sourceText').textContent = interimText + ' [일]';
+                        interimTranscript += transcript;
                     }
+                }
+
+                if (interimTranscript) {
+                    document.getElementById('sourceText').textContent = interimTranscript + ' [자동]';
+                }
+
+                if (finalTranscript) {
+                    console.log('인식된 텍스트:', finalTranscript);
+
+                    // 텍스트 분석으로 언어 감지
+                    const detectedLang = detectLanguageFromText(finalTranscript);
+                    const langLabel = detectedLang === 'ja' ? '[일본어]' : detectedLang === 'ko' ? '[한국어]' : '[알 수 없음]';
+
+                    console.log(`🎯 감지된 언어: ${langLabel}`);
+
+                    document.getElementById('sourceText').textContent = finalTranscript;
+                    translateText(finalTranscript);
                 }
             };
 
-            recognitionJA.onerror = handleRecognitionError;
-            recognitionJA.onend = function() {
+            recognition.onerror = handleRecognitionError;
+
+            recognition.onend = function() {
                 if (isListening) {
                     try {
-                        recognitionJA.start();
+                        recognition.start();
                     } catch (e) {
-                        console.error('일본어 인식 재시작 오류:', e);
+                        console.error('재시작 오류:', e);
+                        stopListening();
                     }
                 }
             };
 
-            // 한국어 인식 이벤트
-            recognitionKO.onresult = function(event) {
-                for (let i = event.resultIndex; i < event.results.length; i++) {
-                    if (event.results[i].isFinal) {
-                        const transcript = event.results[i][0].transcript;
-                        const confidence = event.results[i][0].confidence;
-
-                        console.log('한국어 인식:', transcript, '신뢰도:', confidence);
-                        dualResults.ko = { text: transcript, confidence: confidence };
-
-                        // 타이머 설정: 1초 대기 후 비교
-                        clearTimeout(dualResultTimer);
-                        dualResultTimer = setTimeout(() => selectBestResult(), 1000);
-                    } else {
-                        // 중간 결과 표시
-                        const interimText = event.results[i][0].transcript;
-                        document.getElementById('sourceText').textContent = interimText + ' [한]';
-                    }
-                }
-            };
-
-            recognitionKO.onerror = handleRecognitionError;
-            recognitionKO.onend = function() {
-                if (isListening) {
-                    try {
-                        recognitionKO.start();
-                    } catch (e) {
-                        console.error('한국어 인식 재시작 오류:', e);
-                    }
-                }
-            };
-
-            // 두 인식 모두 시작
-            recognitionJA.start();
-            recognitionKO.start();
+            recognition.start();
 
         } else {
             // 단일 언어 모드 (기존 방식)
@@ -565,83 +528,6 @@ function detectLanguageFromText(text) {
     return null;
 }
 
-// 듀얼 인식 결과 비교 및 선택
-function selectBestResult() {
-    const jaResult = dualResults.ja;
-    const koResult = dualResults.ko;
-
-    // 두 결과 모두 없으면 무시
-    if (!jaResult && !koResult) {
-        return;
-    }
-
-    let selectedResult = null;
-    let selectedLang = null;
-
-    // 둘 중 하나만 있으면 그것을 사용
-    if (jaResult && !koResult) {
-        selectedResult = jaResult;
-        selectedLang = 'ja';
-        console.log('✅ 일본어 인식만 있음:', jaResult.text);
-    } else if (!jaResult && koResult) {
-        selectedResult = koResult;
-        selectedLang = 'ko';
-        console.log('✅ 한국어 인식만 있음:', koResult.text);
-    } else {
-        // 둘 다 있으면 텍스트 분석으로 언어 판단
-        console.log('🔍 듀얼 결과 비교:');
-        console.log(`   일본어 인식: "${jaResult.text}"`);
-        console.log(`   한국어 인식: "${koResult.text}"`);
-
-        // 각 결과의 실제 언어 감지
-        const jaTextLang = detectLanguageFromText(jaResult.text);
-        const koTextLang = detectLanguageFromText(koResult.text);
-
-        console.log(`   일본어 인식기 결과의 실제 언어: ${jaTextLang || '알 수 없음'}`);
-        console.log(`   한국어 인식기 결과의 실제 언어: ${koTextLang || '알 수 없음'}`);
-
-        // 일본어 인식기 결과가 실제로 일본어면 선택
-        if (jaTextLang === 'ja') {
-            selectedResult = jaResult;
-            selectedLang = 'ja';
-            console.log('✅ 일본어 문자 감지 → 일본어 인식 선택');
-        }
-        // 한국어 인식기 결과가 실제로 한국어면 선택
-        else if (koTextLang === 'ko') {
-            selectedResult = koResult;
-            selectedLang = 'ko';
-            console.log('✅ 한글 감지 → 한국어 인식 선택');
-        }
-        // 둘 다 감지 못하면 confidence 사용 (fallback)
-        else {
-            const jaConfidence = jaResult.confidence || 0;
-            const koConfidence = koResult.confidence || 0;
-
-            if (jaConfidence > koConfidence) {
-                selectedResult = jaResult;
-                selectedLang = 'ja';
-                console.log(`✅ 신뢰도 비교 → 일본어 (${jaConfidence.toFixed(2)} > ${koConfidence.toFixed(2)})`);
-            } else {
-                selectedResult = koResult;
-                selectedLang = 'ko';
-                console.log(`✅ 신뢰도 비교 → 한국어 (${koConfidence.toFixed(2)} ≥ ${jaConfidence.toFixed(2)})`);
-            }
-        }
-    }
-
-    // 선택된 결과로 번역 진행
-    if (selectedResult && selectedResult.text) {
-        const langLabel = selectedLang === 'ja' ? '[일본어]' : '[한국어]';
-        console.log(`\n🎯 최종 선택: ${langLabel} "${selectedResult.text}"\n`);
-
-        document.getElementById('sourceText').textContent = selectedResult.text;
-        translateText(selectedResult.text);
-    }
-
-    // 결과 초기화
-    dualResults = { ja: null, ko: null };
-}
-
 // 공통 음성 인식 오류 핸들러
 function handleRecognitionError(event) {
     console.error('음성 인식 오류:', event.error);
@@ -663,24 +549,6 @@ function handleRecognitionError(event) {
 function stopListening() {
     isListening = false;
 
-    // 타이머 정리
-    if (dualResultTimer) {
-        clearTimeout(dualResultTimer);
-        dualResultTimer = null;
-    }
-
-    // 듀얼 인식 중지
-    if (recognitionJA) {
-        recognitionJA.stop();
-        recognitionJA = null;
-    }
-
-    if (recognitionKO) {
-        recognitionKO.stop();
-        recognitionKO = null;
-    }
-
-    // 단일 인식 중지
     if (recognition) {
         recognition.stop();
         recognition = null;
@@ -695,9 +563,6 @@ function stopListening() {
         audioContext.close();
         audioContext = null;
     }
-
-    // 듀얼 결과 초기화
-    dualResults = { ja: null, ko: null };
 
     // 현재 세션 저장
     saveCurrentSession();

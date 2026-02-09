@@ -59,19 +59,24 @@ function setListenLanguage(lang) {
         return;
     }
 
+    const previousLang = listenLanguage;
     listenLanguage = lang;
     localStorage.setItem('listenLanguage', lang);
     updateLanguageButtons();
 
-    // 실행 중이면 재시작 (세션은 유지)
-    if (isListening) {
-        // 음성 인식만 재시작, 세션은 그대로 유지
-        if (recognition) {
-            recognition.stop();
-        }
+    // 실행 중이면 언어만 전환 (세션과 인식 모두 유지)
+    if (isListening && recognition) {
+        console.log(`언어 전환 중: ${previousLang === 'ja' ? '일본어' : '한국어'} → ${lang === 'ja' ? '일본어' : '한국어'}`);
 
+        // 자동 재시작을 일시적으로 막기 위해 플래그 설정
+        const wasListening = isListening;
+        isListening = false;
+
+        // 기존 인식 중지
+        recognition.stop();
+
+        // 새 인식 시작
         setTimeout(() => {
-            // 새 인식 시작
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             recognition = new SpeechRecognition();
             recognition.lang = lang === 'ja' ? 'ja-JP' : 'ko-KR';
@@ -81,6 +86,7 @@ function setListenLanguage(lang) {
             recognition.onstart = function() {
                 const langName = lang === 'ja' ? '일본어' : '한국어';
                 updateStatus(`${langName} 인식 중`);
+                console.log(`✅ ${langName} 인식 시작됨`);
             };
 
             recognition.onresult = function(event) {
@@ -111,6 +117,7 @@ function setListenLanguage(lang) {
             recognition.onend = function() {
                 if (isListening) {
                     try {
+                        console.log('음성 인식이 종료되어 자동 재시작 중...');
                         recognition.start();
                     } catch (e) {
                         console.error('재시작 오류:', e);
@@ -119,9 +126,11 @@ function setListenLanguage(lang) {
                 }
             };
 
+            // 리스닝 상태 복원 및 시작
+            isListening = wasListening;
             recognition.start();
-            console.log(`언어 전환: ${lang === 'ja' ? '일본어' : '한국어'} (세션 유지)`);
-        }, 500);
+            console.log(`🎯 언어 전환 완료: ${lang === 'ja' ? '일본어' : '한국어'} (세션 유지, 인식 계속)`);
+        }, 300);
     }
 }
 

@@ -418,9 +418,9 @@ async function startListening() {
                         console.log('일본어 인식:', transcript, '신뢰도:', confidence);
                         dualResults.ja = { text: transcript, confidence: confidence };
 
-                        // 타이머 설정: 0.5초 대기 후 비교
+                        // 타이머 설정: 1초 대기 후 비교
                         clearTimeout(dualResultTimer);
-                        dualResultTimer = setTimeout(() => selectBestResult(), 500);
+                        dualResultTimer = setTimeout(() => selectBestResult(), 1000);
                     } else {
                         // 중간 결과 표시
                         const interimText = event.results[i][0].transcript;
@@ -450,9 +450,9 @@ async function startListening() {
                         console.log('한국어 인식:', transcript, '신뢰도:', confidence);
                         dualResults.ko = { text: transcript, confidence: confidence };
 
-                        // 타이머 설정: 0.5초 대기 후 비교
+                        // 타이머 설정: 1초 대기 후 비교
                         clearTimeout(dualResultTimer);
-                        dualResultTimer = setTimeout(() => selectBestResult(), 500);
+                        dualResultTimer = setTimeout(() => selectBestResult(), 1000);
                     } else {
                         // 중간 결과 표시
                         const interimText = event.results[i][0].transcript;
@@ -537,6 +537,34 @@ async function startListening() {
     }
 }
 
+// 텍스트에서 언어 감지 (정규식 기반)
+function detectLanguageFromText(text) {
+    // 일본어 문자 체크 (히라가나, 가타카나, 한자)
+    const hasJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(text);
+    // 한글 체크
+    const hasKorean = /[가-힣ㄱ-ㅎㅏ-ㅣ]/.test(text);
+
+    // 일본어 문자 개수
+    const japaneseCount = (text.match(/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/g) || []).length;
+    // 한글 개수
+    const koreanCount = (text.match(/[가-힣ㄱ-ㅎㅏ-ㅣ]/g) || []).length;
+
+    console.log(`텍스트 분석: "${text}" - 일본어:${japaneseCount}자, 한글:${koreanCount}자`);
+
+    // 일본어 문자가 더 많으면 일본어
+    if (japaneseCount > koreanCount) {
+        return 'ja';
+    } else if (koreanCount > japaneseCount) {
+        return 'ko';
+    }
+
+    // 같으면 어느 쪽에 문자가 있는지로 판단
+    if (hasJapanese) return 'ja';
+    if (hasKorean) return 'ko';
+
+    return null;
+}
+
 // 듀얼 인식 결과 비교 및 선택
 function selectBestResult() {
     const jaResult = dualResults.ja;
@@ -554,32 +582,57 @@ function selectBestResult() {
     if (jaResult && !koResult) {
         selectedResult = jaResult;
         selectedLang = 'ja';
+        console.log('✅ 일본어 인식만 있음:', jaResult.text);
     } else if (!jaResult && koResult) {
         selectedResult = koResult;
         selectedLang = 'ko';
+        console.log('✅ 한국어 인식만 있음:', koResult.text);
     } else {
-        // 둘 다 있으면 신뢰도 비교
-        const jaConfidence = jaResult.confidence || 0;
-        const koConfidence = koResult.confidence || 0;
+        // 둘 다 있으면 텍스트 분석으로 언어 판단
+        console.log('🔍 듀얼 결과 비교:');
+        console.log(`   일본어 인식: "${jaResult.text}"`);
+        console.log(`   한국어 인식: "${koResult.text}"`);
 
-        console.log('신뢰도 비교:', {
-            일본어: `"${jaResult.text}" (${jaConfidence.toFixed(2)})`,
-            한국어: `"${koResult.text}" (${koConfidence.toFixed(2)})`
-        });
+        // 각 결과의 실제 언어 감지
+        const jaTextLang = detectLanguageFromText(jaResult.text);
+        const koTextLang = detectLanguageFromText(koResult.text);
 
-        if (jaConfidence > koConfidence) {
+        console.log(`   일본어 인식기 결과의 실제 언어: ${jaTextLang || '알 수 없음'}`);
+        console.log(`   한국어 인식기 결과의 실제 언어: ${koTextLang || '알 수 없음'}`);
+
+        // 일본어 인식기 결과가 실제로 일본어면 선택
+        if (jaTextLang === 'ja') {
             selectedResult = jaResult;
             selectedLang = 'ja';
-        } else {
+            console.log('✅ 일본어 문자 감지 → 일본어 인식 선택');
+        }
+        // 한국어 인식기 결과가 실제로 한국어면 선택
+        else if (koTextLang === 'ko') {
             selectedResult = koResult;
             selectedLang = 'ko';
+            console.log('✅ 한글 감지 → 한국어 인식 선택');
+        }
+        // 둘 다 감지 못하면 confidence 사용 (fallback)
+        else {
+            const jaConfidence = jaResult.confidence || 0;
+            const koConfidence = koResult.confidence || 0;
+
+            if (jaConfidence > koConfidence) {
+                selectedResult = jaResult;
+                selectedLang = 'ja';
+                console.log(`✅ 신뢰도 비교 → 일본어 (${jaConfidence.toFixed(2)} > ${koConfidence.toFixed(2)})`);
+            } else {
+                selectedResult = koResult;
+                selectedLang = 'ko';
+                console.log(`✅ 신뢰도 비교 → 한국어 (${koConfidence.toFixed(2)} ≥ ${jaConfidence.toFixed(2)})`);
+            }
         }
     }
 
     // 선택된 결과로 번역 진행
     if (selectedResult && selectedResult.text) {
         const langLabel = selectedLang === 'ja' ? '[일본어]' : '[한국어]';
-        console.log(`✅ 선택됨 ${langLabel}:`, selectedResult.text, `(신뢰도: ${(selectedResult.confidence || 0).toFixed(2)})`);
+        console.log(`\n🎯 최종 선택: ${langLabel} "${selectedResult.text}"\n`);
 
         document.getElementById('sourceText').textContent = selectedResult.text;
         translateText(selectedResult.text);

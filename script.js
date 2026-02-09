@@ -1343,60 +1343,31 @@ function renderSessionTabs() {
         const title = session.title || generateAutoTitle(session);
         const starred = session.starred || false;
 
-        // 언어 아이콘
-        let langIcon;
-        if (session.language === 'auto') {
-            langIcon = '🌐 자동';
-        } else if (session.language === 'ja') {
-            langIcon = '🇯🇵→🇰🇷';
-        } else {
-            langIcon = '🇰🇷→🇯🇵';
-        }
-
-        // 첫 대화 미리보기 (있을 때만 표시)
-        let preview = null;
-        if (session.historyData && session.historyData.length > 0 && session.historyData[0] && session.historyData[0].source) {
-            const source = session.historyData[0].source;
-            preview = source.substring(0, 60) + (source.length > 60 ? '...' : '');
-        }
-
         return `
-            <div class="session-tab-wrapper">
-                <div class="session-card ${isActive ? 'active' : ''} ${starred ? 'starred' : ''}" onclick="loadSession(${session.id})">
-                    <div class="session-card-header">
-                        <div class="session-card-title">${title}</div>
-                        <div class="session-card-actions">
-                            <button class="session-edit-btn"
-                                    onclick="editSessionTitle(${session.id}, event)"
-                                    title="제목 편집">
-                                ✏️
-                            </button>
-                            <button class="session-star-btn ${starred ? 'starred' : ''}"
-                                    onclick="toggleSessionStar(${session.id}, event)"
-                                    title="${starred ? '중요 표시 해제' : '중요 표시'}">
-                                ${starred ? '⭐' : '☆'}
-                            </button>
-                            <button class="session-delete-btn"
-                                    onclick="deleteSession(${session.id}, event)"
-                                    title="세션 삭제">
-                                🗑️
-                            </button>
-                        </div>
+            <div class="session-card ${isActive ? 'active' : ''} ${starred ? 'starred' : ''}" onclick="loadSession(${session.id})">
+                <div class="session-card-header">
+                    <div class="session-card-title">${title}</div>
+                    <div class="session-card-actions">
+                        <button class="session-edit-btn"
+                                onclick="editSessionTitle(${session.id}, event)"
+                                title="제목 편집">
+                            ✏️
+                        </button>
+                        <button class="session-star-btn ${starred ? 'starred' : ''}"
+                                onclick="toggleSessionStar(${session.id}, event)"
+                                title="${starred ? '중요 표시 해제' : '중요 표시'}">
+                            ${starred ? '⭐' : '☆'}
+                        </button>
+                        <button class="session-delete-btn"
+                                onclick="deleteSession(${session.id}, event)"
+                                title="세션 삭제">
+                            🗑️
+                        </button>
                     </div>
-                    <div class="session-card-meta">
-                        <div class="session-meta-item">
-                            <span>📅</span>
-                            <span>${timeStr} (${weekday})</span>
-                        </div>
-                        <div class="session-meta-item">
-                            <span>${langIcon}</span>
-                        </div>
-                        <div class="session-meta-item">
-                            <span>💬</span>
-                            <span>${count}개</span>
-                        </div>
-                    </div>
-                    ${preview ? `<div class="session-card-preview">"${preview}"</div>` : ''}
+                </div>
+                <div class="session-card-meta">
+                    <span>📅 ${timeStr} (${weekday})</span>
+                    <span>💬 ${count}개</span>
                 </div>
             </div>
         `;

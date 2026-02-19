@@ -504,11 +504,111 @@ MIT License
 
 ---
 
+## ☁️ Koyeb 클라우드 배포
+
+**인터넷 어디서나 접속 가능하도록 무료로 배포하세요!**
+
+### 🎯 왜 Koyeb?
+- ✅ **완전 무료**: 무료 플랜으로 충분히 사용 가능
+- ✅ **항상 켜져있음**: 24/7 실행 (Mac 끄고 다녀도 OK)
+- ✅ **HTTPS 자동**: 보안 연결 자동 설정
+- ✅ **글로벌 접속**: 인터넷만 있으면 어디서나 접속
+
+### 📋 배포 방법 (10분)
+
+#### 1단계: GitHub 저장소 준비
+
+```bash
+# 현재 디렉토리에서 Git 저장소 초기화 (이미 되어 있음)
+git add .
+git commit -m "Deploy to Koyeb"
+
+# GitHub에 저장소 생성 (gh CLI 사용)
+gh repo create voice-translator --public --source=. --remote=origin --push
+```
+
+💡 GitHub 계정이 없으면 https://github.com 에서 가입하세요.
+
+#### 2단계: Koyeb 계정 생성
+
+1. https://www.koyeb.com 접속
+2. **Sign Up** → GitHub 계정으로 가입 (무료)
+3. 카드 등록 **불필요** (무료 플랜)
+
+#### 3단계: 앱 배포
+
+1. Koyeb 대시보드 → **Create App**
+2. **GitHub** 선택
+3. **저장소 선택**: `voice-translator`
+4. **설정**:
+   - **Branch**: `main`
+   - **Build command**: 비워두기 (자동 감지)
+   - **Run command**: `npm start`
+   - **Port**: `3000`
+   - **Instance type**: `Nano` (무료)
+5. **Deploy** 클릭!
+
+#### 4단계: 접속 및 사용
+
+배포 완료 (2-3분 소요) 후:
+
+```
+https://your-app-name.koyeb.app
+```
+
+위 URL로 접속하면 번역기 사용 가능!
+
+💡 **주의사항**:
+- 웹 브라우저의 마이크 기능만 사용 가능 (BlackHole은 로컬 전용)
+- DeepL API 키는 각 브라우저에서 개별 설정 필요
+- 용어집(glossary.json)은 자동으로 배포됨
+
+### 🎤 사용 방법
+
+**Koyeb 배포 버전**은 다음 방식으로 사용:
+
+1. **대면 대화 번역**:
+   - 오디오 장치를 "기본 마이크" 또는 실제 마이크로 선택
+   - 양쪽이 번역기 URL 접속하여 사용
+
+2. **화상회의는 불가**:
+   - BlackHole은 로컬 Mac에서만 작동
+   - 화상회의 번역은 로컬 실행 필요
+
+### 🔄 업데이트하기
+
+코드 수정 후:
+
+```bash
+git add .
+git commit -m "Update features"
+git push origin main
+```
+
+Koyeb이 자동으로 새 버전 배포! (2-3분 소요)
+
+### 🌐 환경 변수 (선택사항)
+
+Koyeb 대시보드에서 환경 변수 설정 가능:
+
+- `NODE_ENV`: `production` (자동 설정됨)
+- `PORT`: `3000` (자동 설정됨)
+
+### 📊 모니터링
+
+Koyeb 대시보드에서:
+- 📈 실시간 로그 확인
+- 🔄 재배포
+- ⚙️ 설정 변경
+- 📊 사용량 확인
+
+---
+
 **만든 날짜**: 2025년 12월 12일
 **현재 버전**: 4.0.0
-**최종 업데이트**: 2025년 12월 13일
-**지원**: macOS 전용
-**플랫폼**: Zoom, Google Meet
+**최종 업데이트**: 2026년 2월 19일
+**지원**: macOS (로컬) | 모든 OS (Koyeb 배포)
+**플랫폼**: Zoom, Google Meet (로컬) | 대면 대화 (Koyeb)
 **테스트**: 전수 조사 완료 ✅
 
 ---

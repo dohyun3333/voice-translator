@@ -12,13 +12,21 @@
         <div class="control-panel">
             <!-- 메인 헤더 (1줄) -->
             <div class="main-header">
-                <h1><span class="paw-icon">🐾</span> 실시간 대화 번역기</h1>
+                <h1>
+                    <span class="paw-icon paw-clickable" onclick="togglePawMenu()" title="메뉴 열기">🐾</span>
+                    실시간 대화 번역기
+                    <!-- 고양이 발바닥 메뉴 -->
+                    <div class="paw-menu" id="pawMenu" style="display: none;">
+                        <button onclick="toggleSessionTabsVisibility()" class="paw-menu-item">
+                            📂 이전 대화 목록 보기/숨기기
+                        </button>
+                    </div>
+                </h1>
                 <div class="header-controls">
                     <select id="audioSource" class="audio-select-compact">
                         <option value="">🎧 오디오 장치 선택...</option>
                     </select>
                     <button onclick="refreshAudioDevices()" class="icon-btn" title="새로고침">🔄</button>
-                    <button onclick="showHowToUse()" class="icon-btn" title="사용법">❓</button>
                     <button onclick="showSetupGuide()" class="icon-btn" title="설정 가이드">📖</button>
                     <button onclick="toggleNetworkInfo()" class="icon-btn" id="networkToggleBtn" title="다른 기기">📱</button>
                     <button onclick="toggleShareLink()" class="icon-btn" id="shareToggleBtn" title="외부 공유">🔗</button>
@@ -73,9 +81,6 @@
 
             <!-- 컴팩트 컨트롤 (1줄) -->
             <div class="compact-controls">
-                <button id="listenAutoBtn" onclick="setListenLanguage('auto')" class="lang-btn-compact" disabled title="미사용 (개발 중)">
-                    🌐 자동 감지 (미사용)
-                </button>
                 <button id="listenKoBtn" onclick="setListenLanguage('ko')" class="lang-btn-compact">
                     🎧 한국어 듣기 (9)
                 </button>
@@ -104,14 +109,14 @@
             </div>
         </div>
 
-        <!-- 번역 히스토리 (UI 숨김 - 기능은 유지) -->
-        <div class="history-section" style="display: none;">
+        <!-- 번역 히스토리 -->
+        <div class="history-section">
             <div class="history-header">
                 <div style="display: flex; gap: 10px; align-items: center;">
                     <h2>대화 기록</h2>
                     <input type="text" id="searchInput" class="search-input" placeholder="검색...">
                 </div>
-                <div style="display: flex; gap: 8px;">
+                <div id="historyActionButtons" style="display: none; gap: 8px;">
                     <button onclick="exportHistory()" class="action-btn">내보내기</button>
                     <button onclick="copyAllHistory()" class="action-btn">전체 복사</button>
                     <button onclick="clearHistory()" class="action-btn clear">지우기</button>
@@ -140,82 +145,6 @@
                         <!-- 번역 내역이 여기에 추가됩니다 -->
                     </tbody>
                 </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- 사용법 모달 -->
-    <div class="modal" id="howToUseModal">
-        <div class="modal-content" style="max-width: 600px;">
-            <span class="close" onclick="closeHowToUse()">&times;</span>
-            <h2>🎯 사용법 (아주 쉬워요!)</h2>
-
-            <div style="background: #dbeafe; padding: 20px; border-radius: 12px; margin-bottom: 20px; border-left: 5px solid #3b82f6;">
-                <p style="color: #1e40af; font-size: 16px; line-height: 1.8; margin: 0;">
-                    <strong>5단계</strong>만 따라하면 바로 사용할 수 있어요! 😊
-                </p>
-            </div>
-
-            <div class="guide-step" style="background: #fff; border-left-color: #10b981;">
-                <h3 style="color: #10b981;">1️⃣ API 키 넣기</h3>
-                <ol style="line-height: 2;">
-                    <li>상단의 <strong>🔑 버튼</strong>을 클릭하세요</li>
-                    <li><strong>API 키</strong>를 입력하고 <strong>저장</strong> 버튼을 누르세요</li>
-                    <li>✅ 초록색 체크가 나오면 성공!</li>
-                </ol>
-                <p class="note">💡 API 키가 없으면 번역이 안 돼요!</p>
-            </div>
-
-            <div class="guide-step" style="background: #fff; border-left-color: #3b82f6;">
-                <h3 style="color: #3b82f6;">2️⃣ 오디오 장치 선택</h3>
-                <ol style="line-height: 2;">
-                    <li><strong>🎧 오디오 장치 선택...</strong> 을 클릭하세요</li>
-                    <li>사용할 <strong>마이크</strong>나 <strong>BlackHole</strong>을 선택하세요</li>
-                </ol>
-                <p class="note">💡 Zoom/Meet 번역: BlackHole을 선택하세요</p>
-                <p class="note">💡 마이크로 직접 말하기: 마이크를 선택하세요</p>
-            </div>
-
-            <div class="guide-step" style="background: #fff; border-left-color: #f59e0b;">
-                <h3 style="color: #f59e0b;">3️⃣ 듣고 싶은 언어 선택</h3>
-                <ol style="line-height: 2;">
-                    <li><strong>🎧 일본어 듣기 (0)</strong>: 일본어를 한국어로 번역</li>
-                    <li><strong>🎧 한국어 듣기 (9)</strong>: 한국어를 일본어로 번역</li>
-                </ol>
-                <p class="note">💡 키보드 <strong>0</strong> 또는 <strong>9</strong> 키로도 바꿀 수 있어요!</p>
-            </div>
-
-            <div class="guide-step" style="background: #fff; border-left-color: #10b981;">
-                <h3 style="color: #10b981;">4️⃣ 시작하기</h3>
-                <ol style="line-height: 2;">
-                    <li><strong>시작 (-)</strong> 버튼을 클릭하세요</li>
-                    <li>말을 하면 자동으로 번역이 시작돼요!</li>
-                    <li>번역 중에도 <strong>0</strong> 또는 <strong>9</strong> 키로 언어를 바꿀 수 있어요</li>
-                </ol>
-                <p class="note">💡 키보드 <strong>-</strong> 키로도 시작할 수 있어요!</p>
-            </div>
-
-            <div class="guide-step" style="background: #fff; border-left-color: #ef4444;">
-                <h3 style="color: #ef4444;">5️⃣ 멈추기</h3>
-                <ol style="line-height: 2;">
-                    <li><strong>중지 (=)</strong> 버튼을 클릭하세요</li>
-                    <li>번역이 멈추고 대화 기록이 저장돼요</li>
-                    <li>다시 <strong>시작</strong> 버튼을 누르면 새 대화가 시작돼요</li>
-                </ol>
-                <p class="note">💡 키보드 <strong>=</strong> 키로도 멈출 수 있어요!</p>
-            </div>
-
-            <div class="guide-success" style="margin-top: 20px;">
-                🎉 끝! 이제 실시간 번역을 사용해보세요!
-            </div>
-
-            <div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin-top: 20px;">
-                <p style="color: #92400e; font-size: 14px; line-height: 1.6; margin: 0;">
-                    <strong>💡 꿀팁:</strong><br>
-                    • 대화 기록은 <strong>최대 10개</strong>까지 자동 저장돼요<br>
-                    • ⭐ 별표를 누르면 중요한 대화를 표시할 수 있어요<br>
-                    • <strong>검색</strong>으로 이전 대화를 찾을 수 있어요
-                </p>
             </div>
         </div>
     </div>

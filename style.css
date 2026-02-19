@@ -43,6 +43,77 @@ h1 {
     animation: pawRotate 3s ease-in-out infinite;
 }
 
+.paw-clickable {
+    cursor: pointer;
+    transition: transform 0.2s, filter 0.2s;
+    position: relative;
+}
+
+.paw-clickable:hover {
+    transform: scale(1.2) !important;
+    filter: brightness(1.2);
+    animation: none;
+}
+
+.paw-clickable:active {
+    transform: scale(1.0) !important;
+}
+
+/* 고양이 발바닥 드롭다운 메뉴 */
+.paw-menu {
+    position: absolute;
+    top: 40px;
+    left: 0;
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    min-width: 200px;
+    padding: 8px;
+    animation: menuSlideIn 0.2s ease-out;
+}
+
+@keyframes menuSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.paw-menu-item {
+    width: 100%;
+    padding: 12px 16px;
+    border: none;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+    font-size: 14px;
+    color: #374151;
+    border-radius: 8px;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.paw-menu-item:last-child {
+    margin-bottom: 0;
+}
+
+.paw-menu-item:hover {
+    background: #f3f4f6;
+}
+
+.paw-menu-item:active {
+    background: #e5e7eb;
+}
+
 @keyframes pawRotate {
     0%, 100% {
         transform: rotate(0deg);
@@ -330,7 +401,7 @@ h1 {
 .current-subtitle {
     background: white;
     border-radius: 12px;
-    padding: 16px 24px;
+    padding: 24px 32px;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
     margin-bottom: 20px;
 }
@@ -339,7 +410,7 @@ h1 {
     display: flex;
     align-items: center;
     gap: 12px;
-    font-size: 24px;
+    font-size: 32px;
     line-height: 1.6;
 }
 
@@ -359,8 +430,7 @@ h1 {
     flex: 1;
 }
 
-/* 플로팅 자막 (삭제됨 - 필요시 복원 가능) */
-/*
+/* 플로팅 자막 (화면 상단, 간결한 버전) */
 .floating-subtitle {
     position: fixed;
     top: 16px;
@@ -377,14 +447,13 @@ h1 {
     color: white;
     padding: 12px 24px;
     border-radius: 8px;
-    font-size: 36px;
+    font-size: 18px;
     font-weight: 500;
     text-align: center;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     border-left: 3px solid #10b981;
     backdrop-filter: blur(8px);
 }
-*/
 
 /* 히스토리 섹션 */
 .history-section {
@@ -459,7 +528,7 @@ h1 {
 .history-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 20px;
+    font-size: 13px;
 }
 
 .history-table thead {
@@ -475,13 +544,14 @@ h1 {
     font-weight: 600;
     color: #6b7280;
     border-bottom: 2px solid #e5e7eb;
-    font-size: 12px;
+    font-size: 24px;
 }
 
 .history-table td {
     padding: 10px 12px;
     border-bottom: 1px solid #f3f4f6;
     vertical-align: top;
+    font-size: 28px;
 }
 
 .history-table tbody tr {
@@ -513,7 +583,7 @@ h1 {
     background: transparent;
     border: none;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 32px;
     padding: 0;
     color: #d1d5db;
     transition: color 0.3s;
@@ -528,7 +598,7 @@ h1 {
     background: transparent;
     border: none;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 32px;
     padding: 0;
     color: #d1d5db;
     transition: color 0.3s;
@@ -540,8 +610,9 @@ h1 {
 
 .time-cell {
     color: #9ca3af;
-    font-size: 11px;
+    font-size: 22px;
     white-space: nowrap;
+    min-width: 80px;
 }
 
 .source-cell {
@@ -612,7 +683,7 @@ h1 {
     }
 
     .floating-korean {
-        font-size: 36px;
+        font-size: 24px;
         padding: 15px 30px;
     }
 
@@ -621,7 +692,7 @@ h1 {
     }
 
     .history-table {
-        font-size: 17px;
+        font-size: 11px;
     }
 
     .history-table th,
@@ -899,197 +970,136 @@ h1 {
     }
 }
 
-/* ==================== 세션 카드 스타일 (컴팩트 세로 배치) ==================== */
+/* ==================== 세션 탭 스타일 ==================== */
 
 .session-tabs-container {
-    padding: 0;
-    background: transparent;
-    border: none;
-    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: #f9fafb;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    border: 1px solid #e5e7eb;
 }
 
 .session-tabs-label {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
-    color: #374151;
-    margin-bottom: 8px;
-    display: block;
+    color: #6b7280;
+    white-space: nowrap;
 }
 
 .session-tabs {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 8px;
-    max-height: 300px;
-    overflow-y: auto;
-    padding-right: 4px;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    flex: 1;
+    overflow-x: auto;
+    padding: 2px 0;
 }
 
 .session-tabs::-webkit-scrollbar {
-    width: 5px;
+    height: 4px;
 }
 
 .session-tabs::-webkit-scrollbar-thumb {
     background: #d1d5db;
-    border-radius: 3px;
+    border-radius: 2px;
 }
 
-.session-card {
-    background: white;
-    border: 1.5px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 10px;
-    cursor: pointer;
-    transition: all 0.2s;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+.session-tab-wrapper {
+    position: relative;
+    display: inline-block;
 }
 
-.session-card:hover {
-    border-color: #667eea;
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
-    transform: translateY(-1px);
-}
-
-.session-card.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-color: #667eea;
-    color: white;
-}
-
-.session-card.starred {
-    border-color: #fbbf24;
-    background: #fffbeb;
-}
-
-.session-card.active.starred {
-    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-    border-color: #fbbf24;
-}
-
-.session-card-header {
+.session-tab {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 6px;
-    gap: 4px;
-}
-
-.session-card-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: #111827;
-    flex: 1;
-    word-break: break-word;
-    line-height: 1.3;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.session-card.active .session-card-title {
-    color: white;
-}
-
-.session-card-actions {
-    display: flex;
-    gap: 2px;
-    flex-shrink: 0;
-}
-
-.session-edit-btn,
-.session-star-btn,
-.session-delete-btn {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    font-size: 13px;
-    padding: 2px;
-    transition: all 0.2s;
-    border-radius: 3px;
-    width: 20px;
-    height: 20px;
-    display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-}
-
-.session-edit-btn {
-    color: #9ca3af;
-}
-
-.session-edit-btn:hover {
-    background: #f3f4f6;
-    color: #667eea;
-    transform: scale(1.1);
-}
-
-.session-star-btn {
-    color: #d1d5db;
-}
-
-.session-star-btn.starred {
-    color: #fbbf24;
-}
-
-.session-star-btn:hover {
-    background: #f3f4f6;
-    color: #fbbf24;
-    transform: scale(1.1);
+    min-width: 60px;
+    padding: 6px 10px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    gap: 2px;
 }
 
 .session-delete-btn {
-    color: #d1d5db;
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    background: #ef4444;
+    color: white;
+    border: 1px solid white;
+    border-radius: 50%;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    font-weight: bold;
+}
+
+.session-tab-wrapper:hover .session-delete-btn {
+    display: flex;
 }
 
 .session-delete-btn:hover {
-    background: #fee2e2;
-    color: #ef4444;
+    background: #dc2626;
     transform: scale(1.1);
 }
 
-.session-card.active .session-edit-btn,
-.session-card.active .session-star-btn,
-.session-card.active .session-delete-btn {
+.session-tab:hover {
+    border-color: #667eea;
+    background: #f3f4f6;
+    transform: translateY(-1px);
+}
+
+.session-tab.active {
+    background: #667eea;
+    border-color: #667eea;
     color: white;
 }
 
-.session-card.active .session-edit-btn:hover,
-.session-card.active .session-star-btn:hover,
-.session-card.active .session-delete-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
+.session-tab.active .session-time,
+.session-tab.active .session-count {
+    color: white;
 }
 
-.session-card-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.session-time {
     font-size: 10px;
-    color: #6b7280;
-}
-
-.session-card.active .session-card-meta {
-    color: rgba(255, 255, 255, 0.9);
-}
-
-.session-edit-input {
-    font-size: 13px;
     font-weight: 600;
-    padding: 3px 6px;
-    border: 2px solid #667eea;
-    border-radius: 4px;
-    outline: none;
-    width: 100%;
-    font-family: inherit;
+    color: #374151;
+}
+
+.session-count {
+    font-size: 11px;
+    font-weight: 700;
+    color: #667eea;
+}
+
+.session-tab.active .session-count {
+    color: white;
 }
 
 @media (max-width: 768px) {
-    .session-tabs {
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    .session-tabs-container {
+        flex-direction: column;
+        align-items: flex-start;
         gap: 6px;
     }
 
-    .session-card-title {
-        font-size: 12px;
+    .session-tabs {
+        width: 100%;
     }
 }
 
@@ -1147,14 +1157,6 @@ h1 {
     background: #667eea;
     color: white;
     border-color: #667eea;
-}
-
-.lang-btn-compact:disabled {
-    background: #f3f4f6;
-    color: #9ca3af;
-    border-color: #e5e7eb;
-    cursor: not-allowed;
-    opacity: 0.6;
 }
 
 .start-btn-compact {

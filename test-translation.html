@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>번역 테스트</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif;
+            background: #f8f9fa;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9fafb;
+            border-radius: 12px;
+            border-left: 4px solid #3b82f6;
+        }
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            min-height: 100px;
+            font-family: inherit;
+            resize: vertical;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 16px;
+            background: #f0fdf4;
+            border-radius: 8px;
+            border-left: 4px solid #10b981;
+            display: none;
+        }
+        .result.show {
+            display: block;
+        }
+        .result-label {
+            font-size: 12px;
+            color: #6b7280;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .result-text {
+            font-size: 18px;
+            color: #111827;
+            font-weight: 600;
+        }
+        .error {
+            background: #fef2f2;
+            border-left-color: #ef4444;
+        }
+        .lang-detect {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-top: 8px;
+        }
+        .api-key-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #fef3c7;
+            border-radius: 12px;
+            border-left: 4px solid #f59e0b;
+        }
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .examples {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        .example-btn {
+            background: #e0e7ff;
+            color: #4338ca;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            border: none;
+            cursor: pointer;
+        }
+        .example-btn:hover {
+            background: #c7d2fe;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 번역 테스트</h1>
+
+        <div class="api-key-section">
+            <strong>⚠️ DeepL API 키 필요</strong>
+            <input type="password" id="apiKey" placeholder="DeepL API 키를 입력하세요">
+            <button onclick="saveApiKey()" style="margin-top: 10px;">저장</button>
+            <span id="keyStatus" style="margin-left: 10px;"></span>
+        </div>
+
+        <!-- 일본어 → 한국어 -->
+        <div class="test-section">
+            <h3>🇯🇵 일본어 → 한국어</h3>
+            <textarea id="jaInput" placeholder="일본어 텍스트를 입력하세요...">こんにちは</textarea>
+            <div class="examples">
+                <button class="example-btn" onclick="setExample('ja', 'こんにちは')">こんにちは</button>
+                <button class="example-btn" onclick="setExample('ja', 'ありがとうございます')">ありがとうございます</button>
+                <button class="example-btn" onclick="setExample('ja', 'よろしくお願いします')">よろしくお願いします</button>
+                <button class="example-btn" onclick="setExample('ja', '今日はいい天気ですね')">今日はいい天気ですね</button>
+            </div>
+            <button onclick="testTranslate('ja')">번역하기</button>
+            <div id="jaResult" class="result">
+                <div class="result-label">번역 결과</div>
+                <div class="result-text" id="jaResultText"></div>
+                <div class="lang-detect" id="jaLangDetect"></div>
+            </div>
+        </div>
+
+        <!-- 한국어 → 일본어 -->
+        <div class="test-section">
+            <h3>🇰🇷 한국어 → 일본어</h3>
+            <textarea id="koInput" placeholder="한국어 텍스트를 입력하세요...">안녕하세요</textarea>
+            <div class="examples">
+                <button class="example-btn" onclick="setExample('ko', '안녕하세요')">안녕하세요</button>
+                <button class="example-btn" onclick="setExample('ko', '감사합니다')">감사합니다</button>
+                <button class="example-btn" onclick="setExample('ko', '잘 부탁드립니다')">잘 부탁드립니다</button>
+                <button class="example-btn" onclick="setExample('ko', '오늘 날씨가 좋네요')">오늘 날씨가 좋네요</button>
+            </div>
+            <button onclick="testTranslate('ko')">번역하기</button>
+            <div id="koResult" class="result">
+                <div class="result-label">번역 결과</div>
+                <div class="result-text" id="koResultText"></div>
+                <div class="lang-detect" id="koLangDetect"></div>
+            </div>
+        </div>
+
+        <!-- 자동 감지 -->
+        <div class="test-section">
+            <h3>🌐 자동 언어 감지</h3>
+            <textarea id="autoInput" placeholder="아무 언어나 입력하세요...">こんにちは / 안녕하세요</textarea>
+            <button onclick="testTranslate('auto')">번역하기</button>
+            <div id="autoResult" class="result">
+                <div class="result-label">번역 결과</div>
+                <div class="result-text" id="autoResultText"></div>
+                <div class="lang-detect" id="autoLangDetect"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let apiKey = localStorage.getItem('deeplApiKey') || '';
+
+        // 페이지 로드 시 API 키 복원
+        window.onload = function() {
+            if (apiKey) {
+                document.getElementById('apiKey').value = '••••••••••••';
+                document.getElementById('apiKey').disabled = true;
+                document.getElementById('keyStatus').textContent = '✅ 저장됨';
+                document.getElementById('keyStatus').style.color = '#10b981';
+            }
+        };
+
+        function saveApiKey() {
+            const input = document.getElementById('apiKey');
+            if (input.disabled) {
+                // 재설정
+                input.disabled = false;
+                input.value = '';
+                apiKey = '';
+                localStorage.removeItem('deeplApiKey');
+                document.getElementById('keyStatus').textContent = '';
+                input.focus();
+            } else {
+                const key = input.value.trim();
+                if (key) {
+                    apiKey = key;
+                    localStorage.setItem('deeplApiKey', key);
+                    input.value = '••••••••••••';
+                    input.disabled = true;
+                    document.getElementById('keyStatus').textContent = '✅ 저장됨';
+                    document.getElementById('keyStatus').style.color = '#10b981';
+                } else {
+                    alert('API 키를 입력하세요');
+                }
+            }
+        }
+
+        function setExample(lang, text) {
+            document.getElementById(lang + 'Input').value = text;
+        }
+
+        async function testTranslate(lang) {
+            if (!apiKey) {
+                alert('먼저 API 키를 입력하고 저장하세요!');
+                return;
+            }
+
+            const inputId = lang + 'Input';
+            const resultId = lang + 'Result';
+            const resultTextId = lang + 'ResultText';
+            const langDetectId = lang + 'LangDetect';
+
+            const text = document.getElementById(inputId).value.trim();
+            if (!text) {
+                alert('텍스트를 입력하세요!');
+                return;
+            }
+
+            const resultDiv = document.getElementById(resultId);
+            const resultText = document.getElementById(resultTextId);
+            const langDetect = document.getElementById(langDetectId);
+
+            resultDiv.classList.remove('error');
+            resultDiv.classList.add('show');
+            resultText.textContent = '번역 중...';
+            langDetect.textContent = '';
+
+            try {
+                const response = await fetch('/api/translate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        autoDetect: true,
+                        apiKey: apiKey
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || '번역 실패');
+                }
+
+                const data = await response.json();
+                resultText.textContent = data.translated;
+                langDetect.textContent = `감지된 언어: ${data.from} → ${data.to}`;
+
+                console.log('번역 성공:', data);
+            } catch (error) {
+                console.error('번역 오류:', error);
+                resultDiv.classList.add('error');
+                resultText.textContent = '❌ ' + error.message;
+
+                if (error.message.includes('API 키')) {
+                    alert('API 키가 올바르지 않습니다. 다시 확인해주세요.');
+                }
+            }
+        }
+    </script>
+</body>
+</html>

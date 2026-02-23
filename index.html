@@ -30,13 +30,14 @@
                     <button onclick="showSetupGuide()" class="icon-btn" title="설정 가이드">📖</button>
                     <button onclick="toggleNetworkInfo()" class="icon-btn" id="networkToggleBtn" title="다른 기기">📱</button>
                     <button onclick="toggleShareLink()" class="icon-btn" id="shareToggleBtn" title="외부 공유">🔗</button>
-                    <button onclick="toggleApiKeyInput()" class="icon-btn" id="toggleApiBtn" title="API 키">🔑</button>
+                    <!-- API 키 버튼 숨김 (하드코딩 키 사용) -->
+                    <!-- <button onclick="toggleApiKeyInput()" class="icon-btn" id="toggleApiBtn" title="API 키">🔑</button> -->
                     <button onclick="toggleUILanguage()" class="icon-btn" id="langToggleBtn" title="언어 전환">🌐</button>
                 </div>
             </div>
 
-            <!-- API 키 입력 섹션 -->
-            <div class="api-key-compact" id="apiKeySection" style="display: none;">
+            <!-- API 키 입력 섹션 (하드코딩 키 사용으로 숨김) -->
+            <!-- <div class="api-key-compact" id="apiKeySection" style="display: none;">
                 <input
                     type="password"
                     id="deeplApiKey"
@@ -45,7 +46,7 @@
                 >
                 <button onclick="saveDeepLApiKey()" class="api-save-btn">저장</button>
                 <span id="apiKeyStatus" class="api-status"></span>
-            </div>
+            </div> -->
 
             <!-- 외부 공유 섹션 -->
             <div class="network-info" id="shareSection" style="display: none;">

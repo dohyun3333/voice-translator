@@ -7,6 +7,7 @@ let selectedDeviceId = localStorage.getItem('selectedAudioDevice') || '';
 let permissionGranted = localStorage.getItem('audioPermissionGranted') === 'true';
 let autoTranslateTimer = null;  // 자동 번역 타이머
 let lastInterimText = '';  // 마지막 중간 텍스트 저장
+let isLanguageSwitching = false;  // 언어 전환 중 플래그
 // 회사 제공 DeepL API 키 (기본값)
 const DEFAULT_DEEPL_API_KEY = '2bc6b0c2-115a-4fb9-841e-315aaf7968c5';
 let deeplApiKey = localStorage.getItem('deeplApiKey') || DEFAULT_DEEPL_API_KEY;
@@ -300,9 +301,15 @@ function setListenLanguage(lang) {
         const t = i18n[uiLanguage];
         const langName = lang === 'ja' ? t.japaneseLang : t.koreanLang;
         updateStatus(`${langName}${t.switchingTo}`);
+
+        // 언어 전환 모드 활성화 (세션 유지)
+        isLanguageSwitching = true;
+
         stopListening();
         setTimeout(() => {
             startListening();
+            // 재시작 후 플래그 해제
+            isLanguageSwitching = false;
         }, 500);
     }
 }
@@ -725,14 +732,18 @@ async function startListening() {
 
     console.log('API 키 확인 완료');
 
-    try {
-        // 새 세션 시작
-        createNewSession();
-        console.log('세션 생성 완료');
-    } catch (error) {
-        console.error('세션 생성 오류:', error);
-        alert(t.alertSessionError + error.message);
-        return;
+    // 새 세션 시작 (언어 전환 중이 아닐 때만)
+    if (!isLanguageSwitching) {
+        try {
+            createNewSession();
+            console.log('세션 생성 완료');
+        } catch (error) {
+            console.error('세션 생성 오류:', error);
+            alert(t.alertSessionError + error.message);
+            return;
+        }
+    } else {
+        console.log('언어 전환 중 - 기존 세션 유지');
     }
 
     // Web Speech API 지원 확인
@@ -904,11 +915,13 @@ function stopListening() {
         audioContext = null;
     }
 
-    // 현재 세션 저장
-    saveCurrentSession();
+    // 현재 세션 저장 (언어 전환 중이 아닐 때만)
+    if (!isLanguageSwitching) {
+        saveCurrentSession();
+    }
 
     const t = i18n[uiLanguage];
-    updateStatus(t.statusStopped);
+    updateStatus(isLanguageSwitching ? `${t.switchingTo}` : t.statusStopped);
 
     // 자막 영역 초기화
     document.getElementById('sourceText').textContent = t.originalText;

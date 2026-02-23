@@ -69,7 +69,33 @@ const i18n = {
         waitingVoice: '음성 대기 중...',
         audioCaptureError: '오디오 캡처 오류',
         micPermissionDenied: '마이크 권한 거부',
-        unknownError: '알 수 없는 오류'
+        unknownError: '알 수 없는 오류',
+        // Alert 메시지
+        alertBrowserNotSupported: '⚠️ 이 브라우저는 오디오 장치 접근을 지원하지 않습니다. Chrome을 사용해주세요.',
+        alertMicPermissionNeeded: '⚠️ 마이크 권한이 필요합니다!\n\n주소창 왼쪽의 자물쇠 아이콘을 클릭하여\n마이크 권한을 "허용"으로 설정해주세요.',
+        alertNoAudioDevice: '⚠️ 오디오 입력 장치를 찾을 수 없습니다!\n\n마이크나 BlackHole이 연결/설치되어 있는지 확인해주세요.',
+        alertAudioDeviceInUse: '⚠️ 오디오 장치를 사용할 수 없습니다!\n\n다른 앱에서 마이크를 사용 중인지 확인해주세요.',
+        alertAudioAccessError: '⚠️ 오디오 장치 접근 중 오류가 발생했습니다:\n',
+        alertApiKeyNeeded: '⚠️ 먼저 DeepL API 키를 입력하고 저장해주세요!\n\nhttps://www.deepl.com/ko/pro-api 에서 무료로 발급받을 수 있습니다.',
+        alertSessionError: '세션 생성 중 오류 발생: ',
+        alertSpeechNotSupported: '⚠️ 이 브라우저는 음성 인식을 지원하지 않습니다. Chrome 브라우저를 사용해주세요.',
+        alertAudioDeviceError: '⚠️ 오디오 장치 접근 오류:\n',
+        alertServerError: '⚠️ 서버에 연결할 수 없습니다.\n\n페이지를 새로고침하거나 잠시 후 다시 시도해주세요.',
+        alertInvalidApiKey: '⚠️ DeepL API 키가 올바르지 않습니다.\n\nAPI 키를 다시 확인하고 저장 버튼을 눌러 재설정해주세요.',
+        alertQuotaExceeded: '⚠️ DeepL 무료 사용량(월 50만 자)이 초과되었습니다.\n\n다음 달에 다시 사용하거나 유료 플랜으로 업그레이드하세요.',
+        alertNoHistory: '복사할 내역이 없습니다.',
+        alertCopySuccess: '✅ 전체 내역이 클립보드에 복사되었습니다!',
+        alertCopyFailed: '⚠️ 복사에 실패했습니다.',
+        alertNoExportData: '내보낼 내역이 없습니다.',
+        alertFileDownloaded: '✅ 파일이 다운로드되었습니다!',
+        alertCopied: '✅ 클립보드에 복사되었습니다!',
+        alertCopyFailedManual: '⚠️ 복사에 실패했습니다. 수동으로 복사해주세요.',
+        alertTunnelError: '터널 생성 실패: ',
+        alertTunnelCreateError: '터널 생성 중 오류: ',
+        alertTunnelStopError: '터널 중지 실패: ',
+        alertNoSessions: '저장된 이전 대화가 없습니다.',
+        sessionListTitle: '📂 저장된 대화 목록:\n\n',
+        sessionListFooter: '\n\n세션 탭을 클릭하여 불러올 수 있습니다.'
     },
     ja: {
         title: 'リアルタイム会話翻訳機',
@@ -118,7 +144,33 @@ const i18n = {
         waitingVoice: '音声待機中...',
         audioCaptureError: 'オーディオキャプチャエラー',
         micPermissionDenied: 'マイク権限拒否',
-        unknownError: '不明なエラー'
+        unknownError: '不明なエラー',
+        // Alert メッセージ
+        alertBrowserNotSupported: '⚠️ このブラウザはオーディオデバイスへのアクセスをサポートしていません。Chromeを使用してください。',
+        alertMicPermissionNeeded: '⚠️ マイク権限が必要です！\n\nアドレスバー左側の鍵アイコンをクリックして\nマイク権限を「許可」に設定してください。',
+        alertNoAudioDevice: '⚠️ オーディオ入力デバイスが見つかりません！\n\nマイクまたはBlackHoleが接続/インストールされているか確認してください。',
+        alertAudioDeviceInUse: '⚠️ オーディオデバイスを使用できません！\n\n他のアプリでマイクを使用中か確認してください。',
+        alertAudioAccessError: '⚠️ オーディオデバイスアクセス中にエラーが発生しました:\n',
+        alertApiKeyNeeded: '⚠️ まずDeepL APIキーを入力して保存してください！\n\nhttps://www.deepl.com/ja/pro-api で無料で発行できます。',
+        alertSessionError: 'セッション生成中にエラーが発生しました: ',
+        alertSpeechNotSupported: '⚠️ このブラウザは音声認識をサポートしていません。Chromeブラウザを使用してください。',
+        alertAudioDeviceError: '⚠️ オーディオデバイスアクセスエラー:\n',
+        alertServerError: '⚠️ サーバーに接続できません。\n\nページを再読み込みするか、しばらくしてから再度お試しください。',
+        alertInvalidApiKey: '⚠️ DeepL APIキーが正しくありません。\n\nAPIキーを再確認して保存ボタンを押して再設定してください。',
+        alertQuotaExceeded: '⚠️ DeepL無料使用量（月50万文字）を超過しました。\n\n来月再度使用するか、有料プランにアップグレードしてください。',
+        alertNoHistory: 'コピーする履歴がありません。',
+        alertCopySuccess: '✅ 全ての履歴がクリップボードにコピーされました！',
+        alertCopyFailed: '⚠️ コピーに失敗しました。',
+        alertNoExportData: 'エクスポートする履歴がありません。',
+        alertFileDownloaded: '✅ ファイルがダウンロードされました！',
+        alertCopied: '✅ クリップボードにコピーされました！',
+        alertCopyFailedManual: '⚠️ コピーに失敗しました。手動でコピーしてください。',
+        alertTunnelError: 'トンネル生成失敗: ',
+        alertTunnelCreateError: 'トンネル生成中にエラー: ',
+        alertTunnelStopError: 'トンネル停止失敗: ',
+        alertNoSessions: '保存された以前の会話がありません。',
+        sessionListTitle: '📂 保存された会話リスト:\n\n',
+        sessionListFooter: '\n\nセッションタブをクリックして読み込めます。'
     }
 };
 
@@ -418,7 +470,8 @@ async function refreshAudioDevices() {
     // MediaDevices API 지원 확인
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         console.error('❌ 이 브라우저는 MediaDevices API를 지원하지 않습니다!');
-        alert('⚠️ 이 브라우저는 오디오 장치 접근을 지원하지 않습니다. Chrome을 사용해주세요.');
+        const t = i18n[uiLanguage];
+        alert(t.alertBrowserNotSupported);
         return;
     }
 
@@ -544,25 +597,26 @@ async function refreshAudioDevices() {
         updateStatus('마이크 권한 필요');
 
         // 에러 타입별 상세 안내
+        const t = i18n[uiLanguage];
         if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
             console.error('⚠️ 사용자가 마이크 권한을 거부했습니다.');
             console.error('💡 해결 방법:');
             console.error('   1. 주소창 왼쪽의 자물쇠 아이콘 클릭');
             console.error('   2. 마이크 권한을 "허용"으로 변경');
             console.error('   3. 페이지 새로고침');
-            alert('⚠️ 마이크 권한이 필요합니다!\n\n주소창 왼쪽의 자물쇠 아이콘을 클릭하여\n마이크 권한을 "허용"으로 설정해주세요.');
+            alert(t.alertMicPermissionNeeded);
         } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
             console.error('⚠️ 오디오 입력 장치를 찾을 수 없습니다.');
             console.error('💡 해결 방법:');
             console.error('   1. 마이크나 오디오 입력 장치가 연결되어 있는지 확인');
             console.error('   2. BlackHole이 설치되어 있는지 확인');
-            alert('⚠️ 오디오 입력 장치를 찾을 수 없습니다!\n\n마이크나 BlackHole이 연결/설치되어 있는지 확인해주세요.');
+            alert(t.alertNoAudioDevice);
         } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
             console.error('⚠️ 오디오 장치를 사용할 수 없습니다 (다른 앱에서 사용 중일 수 있음).');
-            alert('⚠️ 오디오 장치를 사용할 수 없습니다!\n\n다른 앱에서 마이크를 사용 중인지 확인해주세요.');
+            alert(t.alertAudioDeviceInUse);
         } else {
             console.error('⚠️ 알 수 없는 오류가 발생했습니다.');
-            alert('⚠️ 오디오 장치 접근 중 오류가 발생했습니다:\n' + error.message);
+            alert(t.alertAudioAccessError + error.message);
         }
     }
 }
@@ -570,10 +624,11 @@ async function refreshAudioDevices() {
 // 음성 인식 시작
 async function startListening() {
     console.log('시작 버튼 클릭됨');
+    const t = i18n[uiLanguage];
 
     // DeepL API 키 확인
     if (!deeplApiKey) {
-        alert('⚠️ 먼저 DeepL API 키를 입력하고 저장해주세요!\n\nhttps://www.deepl.com/ko/pro-api 에서 무료로 발급받을 수 있습니다.');
+        alert(t.alertApiKeyNeeded);
         return;
     }
 
@@ -585,13 +640,13 @@ async function startListening() {
         console.log('세션 생성 완료');
     } catch (error) {
         console.error('세션 생성 오류:', error);
-        alert('세션 생성 중 오류 발생: ' + error.message);
+        alert(t.alertSessionError + error.message);
         return;
     }
 
     // Web Speech API 지원 확인
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        alert('⚠️ 이 브라우저는 음성 인식을 지원하지 않습니다. Chrome 브라우저를 사용해주세요.');
+        alert(t.alertSpeechNotSupported);
         return;
     }
 
@@ -708,7 +763,8 @@ async function startListening() {
     } catch (error) {
         console.error('시작 오류:', error);
         updateStatus('시작 실패');
-        alert('⚠️ 오디오 장치 접근 오류:\n' + error.message + '\n\n오디오 장치를 다시 선택해주세요.');
+        const t = i18n[uiLanguage];
+        alert(t.alertAudioDeviceError + error.message);
     }
 }
 
@@ -809,14 +865,15 @@ async function translateText(sourceText) {
         updateStatus('번역 오류');
 
         // 에러 타입별 알림
+        const t = i18n[uiLanguage];
         if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
-            alert('⚠️ 서버에 연결할 수 없습니다.\n\n페이지를 새로고침하거나 잠시 후 다시 시도해주세요.');
-        } else if (errorMessage.includes('API 키가 올바르지 않습니다')) {
+            alert(t.alertServerError);
+        } else if (errorMessage.includes('API 키가 올바르지 않습니다') || errorMessage.includes('APIキーが正しくありません')) {
             updateApiKeyStatus('❌ API 키가 올바르지 않습니다', 'red');
-            alert('⚠️ DeepL API 키가 올바르지 않습니다.\n\nAPI 키를 다시 확인하고 저장 버튼을 눌러 재설정해주세요.');
-        } else if (errorMessage.includes('무료 사용량이 초과')) {
+            alert(t.alertInvalidApiKey);
+        } else if (errorMessage.includes('무료 사용량이 초과') || errorMessage.includes('無料使用量を超過')) {
             updateApiKeyStatus('⚠️ 무료 사용량 초과', 'orange');
-            alert('⚠️ DeepL 무료 사용량(월 50만 자)이 초과되었습니다.\n\n다음 달에 다시 사용하거나 유료 플랜으로 업그레이드하세요.');
+            alert(t.alertQuotaExceeded);
         }
     }
 }
@@ -1031,8 +1088,9 @@ function filterHistory() {
 
 // 전체 히스토리 복사
 function copyAllHistory() {
+    const t = i18n[uiLanguage];
     if (historyData.length === 0) {
-        alert('복사할 내역이 없습니다.');
+        alert(t.alertNoHistory);
         return;
     }
 
@@ -1041,22 +1099,23 @@ function copyAllHistory() {
         const time = item.timestamp.toLocaleString('ko-KR');
         const star = item.starred ? '⭐ ' : '';
         text += `${star}[${time}]\n`;
-        text += `원문: ${item.sourceText}\n`;
-        text += `번역: ${item.targetText}\n\n`;
+        text += `${t.originalText}: ${item.sourceText}\n`;
+        text += `${t.translatedText}: ${item.targetText}\n\n`;
     });
 
     navigator.clipboard.writeText(text).then(() => {
-        alert('✅ 전체 내역이 클립보드에 복사되었습니다!');
+        alert(t.alertCopySuccess);
     }).catch(err => {
         console.error('복사 실패:', err);
-        alert('⚠️ 복사에 실패했습니다.');
+        alert(t.alertCopyFailed);
     });
 }
 
 // 히스토리 내보내기 (텍스트 파일)
 function exportHistory() {
+    const t = i18n[uiLanguage];
     if (historyData.length === 0) {
-        alert('내보낼 내역이 없습니다.');
+        alert(t.alertNoExportData);
         return;
     }
 
@@ -1079,7 +1138,8 @@ function exportHistory() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    alert('✅ 파일이 다운로드되었습니다!');
+    const t = i18n[uiLanguage];
+    alert(t.alertFileDownloaded);
 }
 
 // 설정 가이드 모달 열기
@@ -1094,11 +1154,12 @@ function closeSetupGuide() {
 
 // 클립보드에 복사
 function copyToClipboard(text) {
+    const t = i18n[uiLanguage];
     navigator.clipboard.writeText(text).then(() => {
-        alert('✅ 클립보드에 복사되었습니다!');
+        alert(t.alertCopied);
     }).catch(err => {
         console.error('복사 실패:', err);
-        alert('⚠️ 복사에 실패했습니다. 수동으로 복사해주세요.');
+        alert(t.alertCopyFailedManual);
     });
 }
 
@@ -1203,18 +1264,20 @@ async function startTunnel() {
         const response = await fetch('/api/tunnel/start', { method: 'POST' });
         const data = await response.json();
 
+        const t = i18n[uiLanguage];
         if (data.success) {
             showPublicUrl(data.url);
             if (data.warning) {
                 console.log('경고:', data.warning);
             }
         } else {
-            alert('터널 생성 실패: ' + data.error);
+            alert(t.alertTunnelError + data.error);
             btn.disabled = false;
             btn.textContent = '🚀 공유 링크 생성';
         }
     } catch (error) {
-        alert('터널 생성 중 오류: ' + error.message);
+        const t = i18n[uiLanguage];
+        alert(t.alertTunnelCreateError + error.message);
         btn.disabled = false;
         btn.textContent = '🚀 공유 링크 생성';
     }
@@ -1234,7 +1297,8 @@ async function stopTunnel() {
             document.getElementById('shareToggleBtn').classList.remove('active');
         }
     } catch (error) {
-        alert('터널 중지 실패: ' + error.message);
+        const t = i18n[uiLanguage];
+        alert(t.alertTunnelStopError + error.message);
     }
 }
 
@@ -1617,8 +1681,9 @@ function toggleSessionTabsVisibility() {
 
 // 이전 대화 목록 모달 표시
 function showSessionsList() {
+    const t = i18n[uiLanguage];
     if (sessions.length === 0) {
-        alert('저장된 이전 대화가 없습니다.');
+        alert(t.alertNoSessions);
         return;
     }
 
@@ -1633,7 +1698,7 @@ function showSessionsList() {
         return `${dateStr} (${session.historyData.length}개 대화)`;
     }).join('\n');
 
-    alert('📂 저장된 대화 목록:\n\n' + sessionList + '\n\n세션 탭을 클릭하여 불러올 수 있습니다.');
+    alert(t.sessionListTitle + sessionList + t.sessionListFooter);
 
     // 메뉴 닫기
     document.getElementById('pawMenu').style.display = 'none';

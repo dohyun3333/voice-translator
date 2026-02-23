@@ -65,7 +65,11 @@ const i18n = {
         japanese: '일본어',
         koreanLang: '한국어',
         japaneseLang: '일본어',
-        switchingTo: '로 전환 중...'
+        switchingTo: '로 전환 중...',
+        waitingVoice: '음성 대기 중...',
+        audioCaptureError: '오디오 캡처 오류',
+        micPermissionDenied: '마이크 권한 거부',
+        unknownError: '알 수 없는 오류'
     },
     ja: {
         title: 'リアルタイム会話翻訳機',
@@ -110,7 +114,11 @@ const i18n = {
         japanese: '日本語',
         koreanLang: '韓国語',
         japaneseLang: '日本語',
-        switchingTo: 'に切り替え中...'
+        switchingTo: 'に切り替え中...',
+        waitingVoice: '音声待機中...',
+        audioCaptureError: 'オーディオキャプチャエラー',
+        micPermissionDenied: 'マイク権限拒否',
+        unknownError: '不明なエラー'
     }
 };
 
@@ -240,10 +248,22 @@ function updateUILanguage() {
     if (startBtn) startBtn.textContent = t.startBtn;
     if (stopBtn) stopBtn.textContent = t.stopBtn;
 
-    // 상태 텍스트
+    // 상태 텍스트 업데이트
     const statusLabel = document.querySelector('.status-label');
-    if (statusLabel && statusLabel.textContent.includes('대기') || statusLabel.textContent.includes('待機')) {
-        statusLabel.textContent = t.statusWaiting;
+    if (statusLabel) {
+        const currentStatus = statusLabel.textContent;
+        // 현재 상태를 파악하여 적절한 언어로 변경
+        if (currentStatus.includes('대기') || currentStatus.includes('待機')) {
+            statusLabel.textContent = t.statusWaiting;
+        } else if (currentStatus.includes('준비') || currentStatus.includes('準備')) {
+            statusLabel.textContent = t.statusReady;
+        } else if (currentStatus.includes('인식') || currentStatus.includes('認識')) {
+            statusLabel.textContent = t.statusListening;
+        } else if (currentStatus.includes('번역') || currentStatus.includes('翻訳')) {
+            statusLabel.textContent = t.statusTranslating;
+        } else if (currentStatus.includes('중지') || currentStatus.includes('停止')) {
+            statusLabel.textContent = t.statusStopped;
+        }
     }
 
     // 현재 자막
@@ -506,10 +526,12 @@ async function refreshAudioDevices() {
 
         if (selectedDeviceId) {
             console.log('선택된 장치:', selectedDeviceId);
-            updateStatus('준비 완료');
+            const t = i18n[uiLanguage];
+            updateStatus(t.statusReady);
         } else {
             console.log('선택된 장치 없음');
-            updateStatus('대기 중');
+            const t = i18n[uiLanguage];
+            updateStatus(t.statusWaiting);
         }
 
     } catch (error) {
@@ -655,17 +677,16 @@ async function startListening() {
 
         recognition.onerror = function(event) {
             console.error('음성 인식 오류:', event.error);
+            const t = i18n[uiLanguage];
 
             if (event.error === 'no-speech') {
-                updateStatus('음성 대기 중...');
+                updateStatus(t.waitingVoice);
             } else if (event.error === 'audio-capture') {
-                updateStatus('오디오 캡처 오류');
-                alert('⚠️ 오디오 캡처 오류가 발생했습니다.\n\n1. BlackHole이 올바르게 설치되었는지 확인하세요.\n2. 화상회의 앱 오디오가 Multi-Output Device로 설정되었는지 확인하세요.\n3. "설정 가이드"를 참고해주세요.');
+                updateStatus(t.audioCaptureError);
             } else if (event.error === 'not-allowed') {
-                updateStatus('마이크 권한 거부됨');
-                alert('⚠️ 마이크 권한이 거부되었습니다. 브라우저 설정에서 권한을 허용해주세요.');
+                updateStatus(t.micPermissionDenied);
             } else {
-                updateStatus('오류: ' + event.error);
+                updateStatus(t.unknownError + ': ' + event.error);
             }
         };
 
@@ -713,11 +734,12 @@ function stopListening() {
     // 현재 세션 저장
     saveCurrentSession();
 
-    updateStatus('중지됨 (세션 저장됨)');
+    const t = i18n[uiLanguage];
+    updateStatus(t.statusStopped);
 
     // 자막 영역 초기화
-    document.getElementById('sourceText').textContent = '원문';
-    document.getElementById('targetText').textContent = '번역';
+    document.getElementById('sourceText').textContent = t.originalText;
+    document.getElementById('targetText').textContent = t.translatedText;
 
     document.getElementById('startBtn').disabled = false;
     document.getElementById('stopBtn').disabled = true;
@@ -811,12 +833,14 @@ function updateStatus(message) {
 
     labelEl.textContent = message;
 
-    // 상태별 색상 설정
-    if (message.includes('듣는 중') || message.includes('인식 중')) {
+    // 상태별 색상 설정 (한국어/일본어 모두 지원)
+    if (message.includes('듣는 중') || message.includes('인식 중') ||
+        message.includes('認識中') || message.includes('聞いています')) {
         dotEl.style.color = '#10b981'; // 초록색
-    } else if (message.includes('번역 중')) {
+    } else if (message.includes('번역 중') || message.includes('翻訳中')) {
         dotEl.style.color = '#3b82f6'; // 파란색
-    } else if (message.includes('중지') || message.includes('오류') || message.includes('실패')) {
+    } else if (message.includes('중지') || message.includes('오류') || message.includes('실패') ||
+               message.includes('停止') || message.includes('エラー') || message.includes('失敗')) {
         dotEl.style.color = '#ef4444'; // 빨간색
     } else {
         dotEl.style.color = '#9ca3af'; // 회색 (대기 중)

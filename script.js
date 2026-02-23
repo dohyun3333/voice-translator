@@ -275,13 +275,16 @@ window.onload = async function() {
     const sessionTabsContainer = document.querySelector('.session-tabs-container');
     const actionButtons = document.getElementById('historyActionButtons');
 
-    if (sessionTabsVisible === 'true') {
+    // 저장된 세션이 있거나 사용자가 명시적으로 표시 설정한 경우 보여줌
+    if (sessionTabsVisible === 'true' || sessions.length > 0) {
         sessionTabsContainer.style.display = 'block';
         actionButtons.style.display = 'flex';
+        console.log('✅ 세션 탭 표시:', sessions.length, '개 세션');
     } else {
-        // 기본값은 숨김
+        // 세션도 없고 명시적 설정도 없으면 숨김
         sessionTabsContainer.style.display = 'none';
         actionButtons.style.display = 'none';
+        console.log('ℹ️ 세션 탭 숨김 (저장된 세션 없음)');
     }
 };
 
@@ -1088,7 +1091,8 @@ function renderHistory(filterText = '') {
 
     let lastTime = null;
     dataToRender.forEach((item, index) => {
-        const currentTime = item.timestamp;
+        // timestamp를 Date 객체로 변환 (숫자나 문자열인 경우 대비)
+        const currentTime = item.timestamp instanceof Date ? item.timestamp : new Date(item.timestamp);
 
         // 5분 단위로 구분선 표시
         if (index === 0 || (lastTime && (lastTime - currentTime) > 5 * 60 * 1000)) {

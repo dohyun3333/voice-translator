@@ -174,25 +174,68 @@ const i18n = {
     }
 };
 
+// 안전한 i18n 접근 함수
+function getI18nText(key) {
+    try {
+        if (i18n && i18n[uiLanguage] && i18n[uiLanguage][key]) {
+            return i18n[uiLanguage][key];
+        }
+        if (i18n && i18n.ko && i18n.ko[key]) {
+            return i18n.ko[key];
+        }
+        return key;
+    } catch (e) {
+        console.error('i18n 접근 오류:', e);
+        return key;
+    }
+}
+
 // 페이지 로드 시 초기화
 window.onload = async function() {
+    console.log('🚀 window.onload 시작');
+    console.log('📊 현재 uiLanguage:', uiLanguage);
+    console.log('📚 i18n 객체 존재:', typeof i18n);
+
+    // 드롭다운이 비어있지 않도록 초기 옵션 보장
+    const select = document.getElementById('audioSource');
+    if (select) {
+        console.log('✅ audioSource 요소 발견');
+        // 기본 옵션이 없으면 추가
+        if (select.options.length === 0) {
+            console.warn('⚠️ 드롭다운이 비어있음 - 기본 옵션 추가');
+            select.innerHTML = '<option value="">🎧 오디오 장치 선택...</option>';
+        }
+    } else {
+        console.error('❌ audioSource 요소를 찾을 수 없습니다!');
+    }
+
     // UI 언어 적용
-    updateUILanguage();
+    try {
+        console.log('🌐 updateUILanguage 호출');
+        updateUILanguage();
+    } catch (error) {
+        console.error('❌ updateUILanguage 오류:', error);
+    }
 
     // 오디오 장치 목록 로드 (에러가 발생해도 나머지 초기화는 계속 진행)
     try {
+        console.log('🎤 refreshAudioDevices 호출');
         await refreshAudioDevices();
+        console.log('✅ refreshAudioDevices 완료');
     } catch (error) {
-        console.error('오디오 장치 로드 실패:', error);
-        const t = i18n[uiLanguage];
+        console.error('❌ 오디오 장치 로드 실패:', error);
+        console.error('오류 스택:', error.stack);
 
-        // 에러 발생 시 드롭다운에 기본 메시지라도 표시
+        // 에러 발생 시 드롭다운에 기본 메시지 표시
         const select = document.getElementById('audioSource');
-        if (select && select.innerHTML === '') {
-            select.innerHTML = '<option value="">❌ ' + (uiLanguage === 'ko' ? '장치 로드 실패' : 'デバイス読み込み失敗') + '</option>';
+        if (select) {
+            const errorMsg = uiLanguage === 'ko' ? '장치 로드 실패' : 'デバイス読み込み失敗';
+            select.innerHTML = `<option value="">❌ ${errorMsg}</option>`;
+            console.log('📝 에러 메시지를 드롭다운에 표시함');
         }
 
-        updateStatus(uiLanguage === 'ko' ? '마이크 권한 필요' : 'マイク権限必要');
+        const statusMsg = uiLanguage === 'ko' ? '마이크 권한 필요' : 'マイク権限必要';
+        updateStatus(statusMsg);
     }
 
     // DeepL API 키 복원
@@ -473,20 +516,29 @@ function updateApiKeyStatus(message, color) {
 // 오디오 장치 목록 새로고침
 async function refreshAudioDevices() {
     console.log('=== 오디오 장치 목록 로딩 시작 ===');
+    console.log('📊 현재 uiLanguage:', uiLanguage);
+    console.log('📚 i18n 객체 타입:', typeof i18n);
+    console.log('🌐 i18n[uiLanguage] 존재:', i18n ? typeof i18n[uiLanguage] : 'i18n이 없음');
+
     const select = document.getElementById('audioSource');
 
     if (!select) {
-        console.error('❌ 오디오 장치 선택 요소(#audioSource)를 찾을 수 없습니다!');
+        console.error('❌ CRITICAL: audioSource 요소를 찾을 수 없습니다!');
         return;
     }
+
+    console.log('✅ audioSource 요소 확인됨');
+    console.log('📝 현재 옵션 개수:', select.options.length);
 
     // MediaDevices API 지원 확인
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         console.error('❌ 이 브라우저는 MediaDevices API를 지원하지 않습니다!');
-        const t = i18n[uiLanguage];
+        const t = i18n && i18n[uiLanguage] ? i18n[uiLanguage] : i18n.ko;
         select.innerHTML = '<option value="">❌ ' + (uiLanguage === 'ko' ? '브라우저 미지원' : 'ブラウザ未対応') + '</option>';
         updateStatus(uiLanguage === 'ko' ? '브라우저 미지원' : 'ブラウザ未対応');
-        alert(t.alertBrowserNotSupported);
+        if (t && t.alertBrowserNotSupported) {
+            alert(t.alertBrowserNotSupported);
+        }
         return;
     }
 
@@ -525,9 +577,16 @@ async function refreshAudioDevices() {
         console.log(`🎧 오디오 입력 장치 수: ${audioInputs.length}`);
 
         // 드롭다운 초기화
-        const t = i18n[uiLanguage];
-        select.innerHTML = `<option value="">🎧 ${t.audioDevice}</option>`;
+        console.log('🔧 드롭다운 초기화 시작');
+        const t = i18n && i18n[uiLanguage] ? i18n[uiLanguage] : i18n.ko;
+        console.log('📖 i18n 텍스트 객체:', t ? 'OK' : 'NULL');
+        const audioDeviceText = t && t.audioDevice ? t.audioDevice : '오디오 장치 선택...';
+        console.log('💬 드롭다운 텍스트:', audioDeviceText);
+
+        select.innerHTML = `<option value="">🎧 ${audioDeviceText}</option>`;
         console.log('✅ 드롭다운 초기화 완료');
+        console.log('📊 초기화 후 옵션 개수:', select.options.length);
+        console.log('📝 첫 번째 옵션 텍스트:', select.options[0] ? select.options[0].text : 'NONE');
 
         if (audioInputs.length === 0) {
             console.warn('⚠️ 오디오 입력 장치가 없습니다!');
@@ -610,7 +669,7 @@ async function refreshAudioDevices() {
         console.error('  - 메시지:', error.message);
         console.error('  - 스택:', error.stack);
 
-        const t = i18n[uiLanguage];
+        const t = i18n && i18n[uiLanguage] ? i18n[uiLanguage] : i18n.ko;
 
         // 드롭다운에 에러 메시지 표시
         select.innerHTML = `<option value="">❌ ${error.name === 'NotAllowedError' ? (uiLanguage === 'ko' ? '마이크 권한 필요' : 'マイク権限必要') : (uiLanguage === 'ko' ? '장치 접근 실패' : 'デバイスアクセス失敗')}</option>`;
@@ -623,19 +682,27 @@ async function refreshAudioDevices() {
             console.error('   1. 주소창 왼쪽의 자물쇠 아이콘 클릭');
             console.error('   2. 마이크 권한을 "허용"으로 변경');
             console.error('   3. 페이지 새로고침');
-            alert(t.alertMicPermissionNeeded);
+            if (t && t.alertMicPermissionNeeded) {
+                alert(t.alertMicPermissionNeeded);
+            }
         } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
             console.error('⚠️ 오디오 입력 장치를 찾을 수 없습니다.');
             console.error('💡 해결 방법:');
             console.error('   1. 마이크나 오디오 입력 장치가 연결되어 있는지 확인');
             console.error('   2. BlackHole이 설치되어 있는지 확인');
-            alert(t.alertNoAudioDevice);
+            if (t && t.alertNoAudioDevice) {
+                alert(t.alertNoAudioDevice);
+            }
         } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
             console.error('⚠️ 오디오 장치를 사용할 수 없습니다 (다른 앱에서 사용 중일 수 있음).');
-            alert(t.alertAudioDeviceInUse);
+            if (t && t.alertAudioDeviceInUse) {
+                alert(t.alertAudioDeviceInUse);
+            }
         } else {
             console.error('⚠️ 알 수 없는 오류가 발생했습니다.');
-            alert(t.alertAudioAccessError + error.message);
+            if (t && t.alertAudioAccessError) {
+                alert(t.alertAudioAccessError + error.message);
+            }
         }
     }
 }

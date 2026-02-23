@@ -601,10 +601,13 @@ async function refreshAudioDevices() {
         console.error('  - 메시지:', error.message);
         console.error('  - 스택:', error.stack);
 
-        updateStatus('마이크 권한 필요');
+        const t = i18n[uiLanguage];
+
+        // 드롭다운에 에러 메시지 표시
+        select.innerHTML = `<option value="">❌ ${error.name === 'NotAllowedError' ? (uiLanguage === 'ko' ? '마이크 권한 필요' : 'マイク権限必要') : (uiLanguage === 'ko' ? '장치 접근 실패' : 'デバイスアクセス失敗')}</option>`;
+        updateStatus(uiLanguage === 'ko' ? '마이크 권한 필요' : 'マイク権限必要');
 
         // 에러 타입별 상세 안내
-        const t = i18n[uiLanguage];
         if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
             console.error('⚠️ 사용자가 마이크 권한을 거부했습니다.');
             console.error('💡 해결 방법:');

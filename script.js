@@ -179,8 +179,14 @@ window.onload = async function() {
     // UI 언어 적용
     updateUILanguage();
 
-    // 오디오 장치 목록 로드
-    await refreshAudioDevices();
+    // 오디오 장치 목록 로드 (에러가 발생해도 나머지 초기화는 계속 진행)
+    try {
+        await refreshAudioDevices();
+    } catch (error) {
+        console.error('오디오 장치 로드 실패:', error);
+        const t = i18n[uiLanguage];
+        updateStatus(t.alertBrowserNotSupported || '마이크 권한 필요');
+    }
 
     // DeepL API 키 복원
     if (deeplApiKey) {
@@ -510,13 +516,14 @@ async function refreshAudioDevices() {
         console.log(`🎧 오디오 입력 장치 수: ${audioInputs.length}`);
 
         // 드롭다운 초기화
-        select.innerHTML = '<option value="">🎧 오디오 장치 선택...</option>';
+        const t = i18n[uiLanguage];
+        select.innerHTML = `<option value="">🎧 ${t.audioDevice}</option>`;
         console.log('✅ 드롭다운 초기화 완료');
 
         if (audioInputs.length === 0) {
             console.warn('⚠️ 오디오 입력 장치가 없습니다!');
-            select.innerHTML = '<option value="">❌ 오디오 장치 없음</option>';
-            updateStatus('오디오 장치 없음');
+            select.innerHTML = '<option value="">❌ ' + (uiLanguage === 'ko' ? '오디오 장치 없음' : 'オーディオデバイスなし') + '</option>';
+            updateStatus(uiLanguage === 'ko' ? '오디오 장치 없음' : 'オーディオデバイスなし');
             return;
         }
 

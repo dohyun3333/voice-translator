@@ -17,8 +17,108 @@ let sessions = JSON.parse(localStorage.getItem('chatSessions') || '[]');  // 모
 let currentSessionId = null;  // 현재 활성 세션 ID
 let sessionIdCounter = parseInt(localStorage.getItem('sessionIdCounter') || '0');  // 세션 ID 카운터
 
+// UI 언어 설정
+let uiLanguage = localStorage.getItem('uiLanguage') || 'ko';  // 기본값: 한국어
+
+// 다국어 텍스트
+const i18n = {
+    ko: {
+        title: '실시간 대화 번역기',
+        audioDevice: '오디오 장치 선택...',
+        listenKorean: '🎧 한국어 듣기 (9)',
+        listenJapanese: '🎧 일본어 듣기 (0)',
+        startBtn: '시작 (-)',
+        stopBtn: '중지 (=)',
+        statusWaiting: '대기 중',
+        statusReady: '준비 완료',
+        statusListening: '인식 중',
+        statusTranslating: '번역 중...',
+        statusStopped: '중지됨 (세션 저장됨)',
+        originalText: '원문',
+        translatedText: '번역',
+        historyTitle: '대화 기록',
+        searchPlaceholder: '검색...',
+        exportBtn: '내보내기',
+        copyAllBtn: '전체 복사',
+        clearBtn: '지우기',
+        previousChats: '이전 대화:',
+        noSessions: '저장된 세션 없음',
+        time: '시간',
+        apiKeyPlaceholder: 'DeepL API 키 입력',
+        saveBtn: '저장',
+        pleaseSpeak: '로 말씀해주세요...',
+        waitingTranslation: '번역 대기 중...',
+        translating: '번역 중...',
+        menuToggleSessions: '📂 이전 대화 목록 보기/숨기기',
+        networkTitle: '다른 기기 접속',
+        networkLocal: '같은 와이파이의 다른 기기에서 접속:',
+        networkCloud: '🌐 인터넷 어디서나 접속:',
+        networkCloudLabel: '🌍 클라우드 URL (마이크 사용 가능)',
+        networkLocalLabel: '🎤 {interface} (마이크 사용 가능)',
+        networkQrHint: '💡 QR 코드를 스캔하여 휴대폰에서 바로 접속하세요!',
+        networkHttpsWarning: '⚠️ 접속 시 "안전하지 않음" 경고가 표시되면<br>→ \'고급\' → \'안전하지 않은 사이트로 이동\' 클릭',
+        networkNoIp: '로컬 IP 주소를 찾을 수 없습니다.',
+        networkCheckWifi: '와이파이에 연결되어 있는지 확인해주세요.',
+        copyBtn: '복사',
+        sessionBadge: '이전 세션',
+        korean: '한국어',
+        japanese: '일본어',
+        koreanLang: '한국어',
+        japaneseLang: '일본어',
+        switchingTo: '로 전환 중...'
+    },
+    ja: {
+        title: 'リアルタイム会話翻訳機',
+        audioDevice: 'オーディオデバイスを選択...',
+        listenKorean: '🎧 韓国語を聞く (9)',
+        listenJapanese: '🎧 日本語を聞く (0)',
+        startBtn: '開始 (-)',
+        stopBtn: '停止 (=)',
+        statusWaiting: '待機中',
+        statusReady: '準備完了',
+        statusListening: '認識中',
+        statusTranslating: '翻訳中...',
+        statusStopped: '停止しました（セッション保存済み）',
+        originalText: '原文',
+        translatedText: '翻訳',
+        historyTitle: '会話履歴',
+        searchPlaceholder: '検索...',
+        exportBtn: 'エクスポート',
+        copyAllBtn: '全てコピー',
+        clearBtn: '消去',
+        previousChats: '以前の会話:',
+        noSessions: '保存されたセッションなし',
+        time: '時間',
+        apiKeyPlaceholder: 'DeepL APIキーを入力',
+        saveBtn: '保存',
+        pleaseSpeak: 'で話してください...',
+        waitingTranslation: '翻訳待機中...',
+        translating: '翻訳中...',
+        menuToggleSessions: '📂 以前の会話リストを表示/非表示',
+        networkTitle: '他のデバイスで接続',
+        networkLocal: '同じWi-Fiの他のデバイスから接続:',
+        networkCloud: '🌐 インターネットのどこからでも接続:',
+        networkCloudLabel: '🌍 クラウドURL（マイク使用可能）',
+        networkLocalLabel: '🎤 {interface}（マイク使用可能）',
+        networkQrHint: '💡 QRコードをスキャンしてスマホから直接接続してください！',
+        networkHttpsWarning: '⚠️ 接続時に「安全ではありません」警告が表示されたら<br>→ 「詳細設定」→「安全でないサイトに移動」をクリック',
+        networkNoIp: 'ローカルIPアドレスが見つかりません。',
+        networkCheckWifi: 'Wi-Fiに接続されているか確認してください。',
+        copyBtn: 'コピー',
+        sessionBadge: '以前のセッション',
+        korean: '韓国語',
+        japanese: '日本語',
+        koreanLang: '韓国語',
+        japaneseLang: '日本語',
+        switchingTo: 'に切り替え中...'
+    }
+};
+
 // 페이지 로드 시 초기화
 window.onload = async function() {
+    // UI 언어 적용
+    updateUILanguage();
+
     // 오디오 장치 목록 로드
     await refreshAudioDevices();
 
@@ -76,8 +176,9 @@ function setListenLanguage(lang) {
 
     // 실행 중이면 재시작
     if (wasListening) {
-        const langName = lang === 'ja' ? '일본어' : '한국어';
-        updateStatus(`${langName}로 전환 중...`);
+        const t = i18n[uiLanguage];
+        const langName = lang === 'ja' ? t.japaneseLang : t.koreanLang;
+        updateStatus(`${langName}${t.switchingTo}`);
         stopListening();
         setTimeout(() => {
             startListening();
@@ -96,6 +197,118 @@ function updateLanguageButtons() {
     } else {
         koBtn.classList.add('active');
         jaBtn.classList.remove('active');
+    }
+}
+
+// UI 언어 전환
+function toggleUILanguage() {
+    uiLanguage = uiLanguage === 'ko' ? 'ja' : 'ko';
+    localStorage.setItem('uiLanguage', uiLanguage);
+    updateUILanguage();
+}
+
+// UI 언어 업데이트
+function updateUILanguage() {
+    const t = i18n[uiLanguage];
+
+    // 제목
+    const titleEl = document.querySelector('h1');
+    if (titleEl) {
+        const pawIcon = titleEl.querySelector('.paw-icon');
+        const pawMenu = titleEl.querySelector('.paw-menu');
+        titleEl.innerHTML = '';
+        if (pawIcon) titleEl.appendChild(pawIcon);
+        titleEl.appendChild(document.createTextNode('\n                    ' + t.title + '\n                    '));
+        if (pawMenu) titleEl.appendChild(pawMenu);
+    }
+
+    // 오디오 장치 선택
+    const audioSource = document.getElementById('audioSource');
+    if (audioSource && audioSource.options[0]) {
+        audioSource.options[0].text = '🎧 ' + t.audioDevice;
+    }
+
+    // 언어 듣기 버튼
+    const listenKoBtn = document.getElementById('listenKoBtn');
+    const listenJaBtn = document.getElementById('listenJaBtn');
+    if (listenKoBtn) listenKoBtn.textContent = t.listenKorean;
+    if (listenJaBtn) listenJaBtn.textContent = t.listenJapanese;
+
+    // 시작/중지 버튼
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    if (startBtn) startBtn.textContent = t.startBtn;
+    if (stopBtn) stopBtn.textContent = t.stopBtn;
+
+    // 상태 텍스트
+    const statusLabel = document.querySelector('.status-label');
+    if (statusLabel && statusLabel.textContent.includes('대기') || statusLabel.textContent.includes('待機')) {
+        statusLabel.textContent = t.statusWaiting;
+    }
+
+    // 현재 자막
+    const sourceText = document.getElementById('sourceText');
+    const targetText = document.getElementById('targetText');
+    if (sourceText && sourceText.textContent === '원문' || sourceText.textContent === '原文') {
+        sourceText.textContent = t.originalText;
+    }
+    if (targetText && targetText.textContent === '번역' || targetText.textContent === '翻訳') {
+        targetText.textContent = t.translatedText;
+    }
+
+    // 대화 기록 섹션
+    const historyTitle = document.querySelector('.history-section h2');
+    if (historyTitle) historyTitle.textContent = t.historyTitle;
+
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) searchInput.placeholder = t.searchPlaceholder;
+
+    // 액션 버튼들
+    const actionButtons = document.getElementById('historyActionButtons');
+    if (actionButtons) {
+        const buttons = actionButtons.querySelectorAll('.action-btn');
+        if (buttons[0]) buttons[0].textContent = t.exportBtn;
+        if (buttons[1]) buttons[1].textContent = t.copyAllBtn;
+        if (buttons[2]) buttons[2].textContent = t.clearBtn;
+    }
+
+    // 세션 탭 라벨
+    const sessionLabel = document.querySelector('.session-tabs-label');
+    if (sessionLabel) sessionLabel.textContent = t.previousChats;
+
+    // 테이블 헤더
+    const thElements = document.querySelectorAll('.history-table th');
+    if (thElements.length >= 3) {
+        thElements[1].textContent = t.time;
+        thElements[2].textContent = t.originalText;
+        thElements[3].textContent = t.translatedText;
+    }
+
+    // API 키 입력
+    const apiKeyInput = document.getElementById('deeplApiKey');
+    if (apiKeyInput && !apiKeyInput.disabled) {
+        apiKeyInput.placeholder = t.apiKeyPlaceholder;
+    }
+
+    // 저장 버튼
+    const apiSaveBtn = document.querySelector('.api-save-btn');
+    if (apiSaveBtn) apiSaveBtn.textContent = t.saveBtn;
+
+    // 메뉴 항목
+    const pawMenuItem = document.querySelector('.paw-menu-item');
+    if (pawMenuItem) pawMenuItem.textContent = t.menuToggleSessions;
+
+    // 네트워크 정보 제목
+    const networkHeader = document.querySelector('#networkInfo .network-header strong');
+    if (networkHeader) networkHeader.textContent = t.networkTitle;
+
+    // 세션 렌더링 (저장된 세션 없음 메시지)
+    renderSessionTabs();
+
+    // 언어 전환 버튼 툴팁
+    const langToggleBtn = document.getElementById('langToggleBtn');
+    if (langToggleBtn) {
+        langToggleBtn.title = uiLanguage === 'ko' ? t.japanese : t.korean;
     }
 }
 
@@ -398,14 +611,15 @@ async function startListening() {
         // 음성 인식 이벤트 핸들러
         recognition.onstart = function() {
             isListening = true;
-            const langName = listenLanguage === 'ja' ? '일본어' : '한국어';
-            updateStatus(`${langName} 인식 중`);
+            const t = i18n[uiLanguage];
+            const langName = listenLanguage === 'ja' ? t.japaneseLang : t.koreanLang;
+            updateStatus(`${langName} ${t.statusListening}`);
             document.getElementById('startBtn').disabled = true;
             document.getElementById('stopBtn').disabled = false;
 
             // 초기 메시지 표시
-            document.getElementById('sourceText').textContent = `${langName}로 말씀해주세요...`;
-            document.getElementById('targetText').textContent = '번역 대기 중...';
+            document.getElementById('sourceText').textContent = `${langName}${t.pleaseSpeak}`;
+            document.getElementById('targetText').textContent = t.waitingTranslation;
         };
 
         recognition.onresult = function(event) {
@@ -424,15 +638,17 @@ async function startListening() {
 
             // 원문 텍스트 표시 (중간 결과)
             if (interimTranscript) {
+                const t = i18n[uiLanguage];
                 document.getElementById('sourceText').textContent = interimTranscript;
                 // 새로운 음성 입력이 시작되면 이전 번역 결과 지우기
-                document.getElementById('targetText').textContent = '번역 대기 중...';
+                document.getElementById('targetText').textContent = t.waitingTranslation;
             }
 
             // 최종 결과가 있으면 번역 시작
             if (finalTranscript) {
+                const t = i18n[uiLanguage];
                 document.getElementById('sourceText').textContent = finalTranscript;
-                document.getElementById('targetText').textContent = '번역 중...';
+                document.getElementById('targetText').textContent = t.translating;
                 translateText(finalTranscript);
             }
         };
@@ -1057,6 +1273,7 @@ function toggleNetworkInfo() {
 function displayNetworkInfo() {
     const addressesDiv = document.getElementById('networkAddresses');
     const qrDiv = document.getElementById('qrCode');
+    const t = i18n[uiLanguage];
 
     if (!window.networkData) {
         addressesDiv.innerHTML = '<p style="color: #ef4444;">네트워크 정보를 불러올 수 없습니다.</p>';
@@ -1072,34 +1289,35 @@ function displayNetworkInfo() {
 
     // Koyeb/클라우드 환경인 경우 현재 URL 표시
     if (isKoyeb) {
-        html += '<div style="font-size: 11px; color: #6b7280; margin-bottom: 6px;">🌐 인터넷 어디서나 접속:</div>';
+        html += `<div style="font-size: 11px; color: #6b7280; margin-bottom: 6px;">${t.networkCloud}</div>`;
         html += `
             <div class="network-address-item" style="background: #dbeafe; border: 1px solid #3b82f6;">
                 <div style="flex: 1; min-width: 0;">
-                    <div style="font-size: 10px; color: #1e40af;">🌍 클라우드 URL (마이크 사용 가능)</div>
+                    <div style="font-size: 10px; color: #1e40af;">${t.networkCloudLabel}</div>
                     <div style="font-family: monospace; font-size: 11px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis;">${currentUrl}</div>
                 </div>
-                <button onclick="copyToClipboard('${currentUrl}')" class="copy-btn">복사</button>
+                <button onclick="copyToClipboard('${currentUrl}')" class="copy-btn">${t.copyBtn}</button>
             </div>
         `;
         // 클라우드 URL의 QR 코드 생성
         generateQRCode(currentUrl);
-        html += '<div style="font-size: 10px; color: #6b7280; margin-top: 8px; padding: 6px; background: #e0e7ff; border-radius: 4px;">💡 QR 코드를 스캔하여 휴대폰에서 바로 접속하세요!</div>';
+        html += `<div style="font-size: 10px; color: #6b7280; margin-top: 8px; padding: 6px; background: #e0e7ff; border-radius: 4px;">${t.networkQrHint}</div>`;
     } else {
         // 로컬 환경인 경우
-        html += '<div style="font-size: 11px; color: #6b7280; margin-bottom: 6px;">같은 와이파이의 다른 기기에서 접속:</div>';
+        html += `<div style="font-size: 11px; color: #6b7280; margin-bottom: 6px;">${t.networkLocal}</div>`;
 
         if (data.localAddresses && data.localAddresses.length > 0) {
             data.localAddresses.forEach((addr, index) => {
                 // HTTPS 주소만 표시 (마이크 사용 가능)
                 if (addr.httpsUrl) {
+                    const label = t.networkLocalLabel.replace('{interface}', addr.interface);
                     html += `
                         <div class="network-address-item" style="background: #ecfdf5; border: 1px solid #10b981;">
                             <div style="flex: 1; min-width: 0;">
-                                <div style="font-size: 10px; color: #059669;">🎤 ${addr.interface} (마이크 사용 가능)</div>
+                                <div style="font-size: 10px; color: #059669;">${label}</div>
                                 <div style="font-family: monospace; font-size: 11px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis;">${addr.httpsUrl}</div>
                             </div>
-                            <button onclick="copyToClipboard('${addr.httpsUrl}')" class="copy-btn">복사</button>
+                            <button onclick="copyToClipboard('${addr.httpsUrl}')" class="copy-btn">${t.copyBtn}</button>
                         </div>
                     `;
 
@@ -1112,12 +1330,11 @@ function displayNetworkInfo() {
 
             // HTTPS 안내 메시지
             html += `<div style="font-size: 10px; color: #6b7280; margin-top: 8px; padding: 6px; background: #fef3c7; border-radius: 4px;">
-                ⚠️ 접속 시 "안전하지 않음" 경고가 표시되면<br>
-                → '고급' → '안전하지 않은 사이트로 이동' 클릭
+                ${t.networkHttpsWarning}
             </div>`;
         } else {
-            html += '<p style="color: #ef4444; font-size: 11px;">로컬 IP 주소를 찾을 수 없습니다.</p>';
-            html += '<p style="font-size: 10px; color: #6b7280;">와이파이에 연결되어 있는지 확인해주세요.</p>';
+            html += `<p style="color: #ef4444; font-size: 11px;">${t.networkNoIp}</p>`;
+            html += `<p style="font-size: 10px; color: #6b7280;">${t.networkCheckWifi}</p>`;
             // 로컬 환경이지만 IP가 없는 경우 현재 URL의 QR 코드라도 표시
             generateQRCode(currentUrl);
         }
@@ -1236,9 +1453,10 @@ function saveCurrentSession() {
 function renderSessionTabs() {
     const container = document.getElementById('sessionTabs');
     if (!container) return;
+    const t = i18n[uiLanguage];
 
     if (sessions.length === 0) {
-        container.innerHTML = '<div style="font-size: 11px; color: #9ca3af; padding: 4px 0;">저장된 세션 없음</div>';
+        container.innerHTML = `<div style="font-size: 11px; color: #9ca3af; padding: 4px 0;">${t.noSessions}</div>`;
         return;
     }
 

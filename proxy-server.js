@@ -193,8 +193,18 @@ app.post('/api/translate', async (req, res) => {
             params.source_lang = sourceLang;
         }
 
+        // API 키 타입에 따라 엔드포인트 자동 선택
+        // 무료 플랜 키: :fx로 끝남 → api-free.deepl.com
+        // 유료 플랜 키: 일반 UUID 형식 → api.deepl.com
+        const isFreeKey = apiKey.endsWith(':fx');
+        const endpoint = isFreeKey
+            ? 'https://api-free.deepl.com/v2/translate'
+            : 'https://api.deepl.com/v2/translate';
+
+        console.log(`사용 엔드포인트: ${endpoint} (${isFreeKey ? '무료 플랜' : '유료 플랜'})`);
+
         const response = await axios.post(
-            'https://api-free.deepl.com/v2/translate',
+            endpoint,
             params,
             {
                 headers: {

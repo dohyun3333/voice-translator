@@ -240,12 +240,20 @@ h1 {
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
-    transition: background 0.3s;
+    transition: all 0.3s;
     white-space: nowrap;
 }
 
 .api-save-btn:hover {
     background: #059669;
+}
+
+.api-save-btn.reset-mode {
+    background: #f59e0b;
+}
+
+.api-save-btn.reset-mode:hover {
+    background: #d97706;
 }
 
 .api-status {

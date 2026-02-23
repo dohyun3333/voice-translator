@@ -49,6 +49,7 @@ const i18n = {
         time: '시간',
         apiKeyPlaceholder: 'DeepL API 키 입력',
         saveBtn: '저장',
+        resetBtn: '재설정',
         pleaseSpeak: '로 말씀해주세요...',
         waitingTranslation: '번역 대기 중...',
         translating: '번역 중...',
@@ -124,6 +125,7 @@ const i18n = {
         time: '時間',
         apiKeyPlaceholder: 'DeepL APIキーを入力',
         saveBtn: '保存',
+        resetBtn: '再設定',
         pleaseSpeak: 'で話してください...',
         waitingTranslation: '翻訳待機中...',
         translating: '翻訳中...',
@@ -244,11 +246,28 @@ window.onload = async function() {
     // DeepL API 키 복원
     if (deeplApiKey) {
         const input = document.getElementById('deeplApiKey');
+        const saveBtn = document.querySelector('.api-save-btn');
+
         if (input) {
-            input.value = '••••••••••••••••';
+            // 마스킹 표시: 앞 8자 + •••• + 뒤 4자
+            const maskedKey = deeplApiKey.substring(0, 8) + '••••' + deeplApiKey.substring(deeplApiKey.length - 4);
+            input.type = 'text';
+            input.value = maskedKey;
             input.disabled = true;
         }
-        updateApiKeyStatus('✅', '#10b981');
+
+        // 상태 메시지
+        const isDefault = deeplApiKey === DEFAULT_DEEPL_API_KEY;
+        const statusMsg = isDefault ? '✅ 기본 키 사용 중' : '✅ 사용자 키 저장됨';
+        updateApiKeyStatus(statusMsg, '#10b981');
+
+        // 버튼 텍스트를 "재설정"으로 변경
+        if (saveBtn) {
+            const t = i18n[uiLanguage];
+            saveBtn.textContent = t.resetBtn || '재설정';
+            saveBtn.classList.add('reset-mode');
+        }
+
         // API 키가 있으면 버튼 스타일 변경
         const toggleBtn = document.getElementById('toggleApiBtn');
         if (toggleBtn) {
@@ -468,18 +487,24 @@ function toggleApiKeyInput() {
 // DeepL API 키 저장
 function saveDeepLApiKey() {
     const input = document.getElementById('deeplApiKey');
+    const saveBtn = document.querySelector('.api-save-btn');
     if (!input) return;
 
     const key = input.value.trim();
+    const t = i18n[uiLanguage];
 
     if (input.disabled) {
-        // 이미 저장된 키 재설정
+        // 이미 저장된 키 재설정 모드
         input.disabled = false;
+        input.type = 'password';
         input.value = '';
-        deeplApiKey = '';
-        localStorage.removeItem('deeplApiKey');
+        input.placeholder = t.apiKeyPlaceholder || 'DeepL API 키 입력';
         updateApiKeyStatus('', '');
         input.focus();
+
+        // 버튼 텍스트 변경
+        saveBtn.textContent = t.saveBtn || '저장';
+        saveBtn.classList.remove('reset-mode');
 
         // 토글 버튼 스타일 제거
         const toggleBtn = document.getElementById('toggleApiBtn');
@@ -490,35 +515,42 @@ function saveDeepLApiKey() {
     }
 
     if (!key) {
-        updateApiKeyStatus('⚠️', '#f59e0b');
+        updateApiKeyStatus('⚠️ 키를 입력하세요', '#f59e0b');
         return;
     }
 
     // API 키 형식 검증 (UUID 형식: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
     const deeplKeyPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!deeplKeyPattern.test(key)) {
-        updateApiKeyStatus('❌', '#ef4444');
-        const t = i18n[uiLanguage];
+        updateApiKeyStatus('❌ 형식 오류', '#ef4444');
         alert('⚠️ DeepL API 키 형식이 올바르지 않습니다.\n\n올바른 형식: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\n\n예시: 2bc6b0c2-115a-4fb9-841e-315aaf7968c5');
         return;
     }
 
+    // API 키 저장
     deeplApiKey = key;
     localStorage.setItem('deeplApiKey', key);
-    input.value = '••••••••••••••••';
+
+    // UI 업데이트: 마스킹 표시
+    input.type = 'text';
+    const maskedKey = key.substring(0, 8) + '••••' + key.substring(key.length - 4);
+    input.value = maskedKey;
     input.disabled = true;
-    updateApiKeyStatus('✅', '#10b981');
+
+    // 성공 메시지
+    const isDefault = key === DEFAULT_DEEPL_API_KEY;
+    const statusMsg = isDefault ? '✅ 기본 키 사용 중' : '✅ 사용자 키 저장됨';
+    updateApiKeyStatus(statusMsg, '#10b981');
+
+    // 버튼 텍스트를 "재설정"으로 변경
+    saveBtn.textContent = t.resetBtn || '재설정';
+    saveBtn.classList.add('reset-mode');
 
     // 토글 버튼 스타일 업데이트
     const toggleBtn = document.getElementById('toggleApiBtn');
     if (toggleBtn) {
         toggleBtn.classList.add('has-key');
     }
-
-    // 입력창 자동으로 닫기
-    setTimeout(() => {
-        document.getElementById('apiKeySection').style.display = 'none';
-    }, 1000);
 }
 
 // API 키 상태 업데이트

@@ -276,16 +276,17 @@ window.onload = async function() {
     const sessionTabsContainer = document.querySelector('.session-tabs-container');
     const actionButtons = document.getElementById('historyActionButtons');
 
-    // 저장된 세션이 있거나 사용자가 명시적으로 표시 설정한 경우 보여줌
-    if (sessionTabsVisible === 'true' || sessions.length > 0) {
+    // 기본값은 숨김, 사용자가 명시적으로 표시 설정한 경우에만 보여줌
+    if (sessionTabsVisible === 'true') {
         sessionTabsContainer.style.display = 'block';
         actionButtons.style.display = 'flex';
         console.log('✅ 세션 탭 표시:', sessions.length, '개 세션');
     } else {
-        // 세션도 없고 명시적 설정도 없으면 숨김
+        // 기본적으로 숨김
         sessionTabsContainer.style.display = 'none';
         actionButtons.style.display = 'none';
-        console.log('ℹ️ 세션 탭 숨김 (저장된 세션 없음)');
+        localStorage.setItem('sessionTabsVisible', 'false');
+        console.log('ℹ️ 세션 탭 숨김 (기본값)');
     }
 };
 
@@ -493,9 +494,12 @@ function saveDeepLApiKey() {
         return;
     }
 
-    // API 키 형식 검증 (간단한 체크)
-    if (!key.includes('-') || key.length < 30) {
+    // API 키 형식 검증 (UUID 형식: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+    const deeplKeyPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!deeplKeyPattern.test(key)) {
         updateApiKeyStatus('❌', '#ef4444');
+        const t = i18n[uiLanguage];
+        alert('⚠️ DeepL API 키 형식이 올바르지 않습니다.\n\n올바른 형식: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\n\n예시: 2bc6b0c2-115a-4fb9-841e-315aaf7968c5');
         return;
     }
 

@@ -5,6 +5,8 @@ let audioStream = null;
 let audioContext = null;
 let selectedDeviceId = localStorage.getItem('selectedAudioDevice') || '';
 let permissionGranted = localStorage.getItem('audioPermissionGranted') === 'true';
+let autoTranslateTimer = null;  // 자동 번역 타이머
+let lastInterimText = '';  // 마지막 중간 텍스트 저장
 // 회사 제공 DeepL API 키 (기본값)
 const DEFAULT_DEEPL_API_KEY = '2bc6b0c2-115a-4fb9-841e-315aaf7968c5';
 let deeplApiKey = localStorage.getItem('deeplApiKey') || DEFAULT_DEEPL_API_KEY;
@@ -801,18 +803,39 @@ async function startListening() {
 
             // 원문 텍스트 표시 (중간 결과)
             if (interimTranscript) {
-                const t = i18n[uiLanguage];
                 document.getElementById('sourceText').textContent = interimTranscript;
-                // 새로운 음성 입력이 시작되면 이전 번역 결과 지우기
-                document.getElementById('targetText').textContent = t.waitingTranslation;
+                lastInterimText = interimTranscript;
+
+                // 기존 타이머 취소
+                if (autoTranslateTimer) {
+                    clearTimeout(autoTranslateTimer);
+                }
+
+                // 1.5초 후 자동 번역 (말이 멈추면 자동으로 번역)
+                autoTranslateTimer = setTimeout(() => {
+                    if (lastInterimText.trim()) {
+                        console.log('⏱️ 자동 번역 시작:', lastInterimText);
+                        const t = i18n[uiLanguage];
+                        document.getElementById('targetText').textContent = t.translating;
+                        translateText(lastInterimText);
+                        lastInterimText = '';  // 번역 후 초기화
+                    }
+                }, 1500);  // 1.5초 대기
             }
 
-            // 최종 결과가 있으면 번역 시작
+            // 최종 결과가 있으면 즉시 번역 (타이머 취소하고)
             if (finalTranscript) {
+                // 타이머 취소
+                if (autoTranslateTimer) {
+                    clearTimeout(autoTranslateTimer);
+                    autoTranslateTimer = null;
+                }
+
                 const t = i18n[uiLanguage];
                 document.getElementById('sourceText').textContent = finalTranscript;
                 document.getElementById('targetText').textContent = t.translating;
                 translateText(finalTranscript);
+                lastInterimText = '';  // 초기화
             }
         };
 
@@ -857,6 +880,13 @@ async function startListening() {
 // 음성 인식 중지
 function stopListening() {
     isListening = false;
+
+    // 자동 번역 타이머 정리
+    if (autoTranslateTimer) {
+        clearTimeout(autoTranslateTimer);
+        autoTranslateTimer = null;
+    }
+    lastInterimText = '';
 
     if (recognition) {
         recognition.stop();

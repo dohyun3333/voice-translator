@@ -838,7 +838,7 @@ async function startListening() {
                     clearTimeout(autoTranslateTimer);
                 }
 
-                // 1초 후 자동 번역 (말이 멈추면 자동으로 번역)
+                // 1.5초 후 자동 번역 (말이 멈추면 자동으로 번역)
                 autoTranslateTimer = setTimeout(() => {
                     if (lastInterimText.trim()) {
                         console.log('⏱️ 자동 번역 시작:', lastInterimText);
@@ -847,7 +847,7 @@ async function startListening() {
                         translateText(lastInterimText);
                         lastInterimText = '';  // 번역 후 초기화
                     }
-                }, 1000);  // 1초 대기
+                }, 1500);  // 1.5초 대기
             }
         };
 

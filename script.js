@@ -804,8 +804,21 @@ async function startListening() {
                 }
             }
 
-            // 원문 텍스트 표시 (중간 결과)
-            if (interimTranscript) {
+            // 최종 결과가 있으면 즉시 번역 (타이머 취소하고)
+            if (finalTranscript) {
+                // 타이머 취소
+                if (autoTranslateTimer) {
+                    clearTimeout(autoTranslateTimer);
+                    autoTranslateTimer = null;
+                }
+
+                const t = i18n[uiLanguage];
+                document.getElementById('sourceText').textContent = finalTranscript;
+                document.getElementById('targetText').textContent = t.translating;
+                translateText(finalTranscript);
+                lastInterimText = '';  // 초기화
+            } else if (interimTranscript) {
+                // 최종 결과가 없을 때만 중간 결과 처리 (중복 번역 방지)
                 document.getElementById('sourceText').textContent = interimTranscript;
                 lastInterimText = interimTranscript;
 
@@ -824,21 +837,6 @@ async function startListening() {
                         lastInterimText = '';  // 번역 후 초기화
                     }
                 }, 1000);  // 1초 대기
-            }
-
-            // 최종 결과가 있으면 즉시 번역 (타이머 취소하고)
-            if (finalTranscript) {
-                // 타이머 취소
-                if (autoTranslateTimer) {
-                    clearTimeout(autoTranslateTimer);
-                    autoTranslateTimer = null;
-                }
-
-                const t = i18n[uiLanguage];
-                document.getElementById('sourceText').textContent = finalTranscript;
-                document.getElementById('targetText').textContent = t.translating;
-                translateText(finalTranscript);
-                lastInterimText = '';  // 초기화
             }
         };
 

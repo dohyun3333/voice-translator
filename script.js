@@ -1224,7 +1224,6 @@ function exportHistory() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    const t = i18n[uiLanguage];
     alert(t.alertFileDownloaded);
 }
 

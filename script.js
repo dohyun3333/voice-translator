@@ -12,6 +12,8 @@ let isLanguageSwitching = false;  // 언어 전환 중 플래그
 const DEFAULT_DEEPL_API_KEY = '2bc6b0c2-115a-4fb9-841e-315aaf7968c5';
 // 하드코딩 키 강제 사용 (localStorage 무시)
 let deeplApiKey = DEFAULT_DEEPL_API_KEY;
+// 구글 스프레드시트 웹앱 URL (자동 저장)
+const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbyrPb9y1i3Cs28Opq2iUyW5h9veXTdAvAlePfqIFIOJKyuZxlYyj-Pxx14gWMjLq1w7EA/exec';
 let listenLanguage = localStorage.getItem('listenLanguage') || 'ja';  // 기본값: 일본어
 let historyData = [];  // 현재 세션의 히스토리 데이터 배열
 let historyIdCounter = 0;  // 고유 ID 카운터
@@ -1012,6 +1014,15 @@ async function translateText(sourceText) {
         // 히스토리에 추가 (언어 정보 포함)
         addToHistory(sourceText, targetText, detectedLang);
 
+        // 구글 스프레드시트에 자동 저장
+        saveToGoogleSheet({
+            timestamp: Date.now(),
+            sourceText: sourceText,
+            targetText: targetText,
+            detectedLang: detectedLang,
+            sessionId: currentSessionId
+        });
+
         const langName = listenLanguage === 'ja' ? '일본어' : '한국어';
         updateStatus(`${langName} 인식 중`);
 
@@ -1870,4 +1881,41 @@ function showSessionsList() {
     // 메뉴 닫기
     document.getElementById('pawMenu').style.display = 'none';
     document.removeEventListener('click', closePawMenuOnClickOutside);
+}
+
+// ==================== 구글 스프레드시트 자동 저장 ====================
+
+/**
+ * 구글 스프레드시트에 번역 데이터 저장
+ * @param {Object} data - 저장할 데이터 (timestamp, sourceText, targetText, detectedLang, sessionId)
+ */
+async function saveToGoogleSheet(data) {
+    // URL이 설정되지 않았으면 저장 안 함
+    if (!GOOGLE_SHEET_URL) {
+        console.log('ℹ️ 구글 시트 URL이 설정되지 않아 저장하지 않습니다.');
+        return;
+    }
+
+    try {
+        console.log('📊 구글 시트 저장 시작:', data.sourceText, '→', data.targetText);
+
+        // POST 요청 보내기
+        const response = await fetch(GOOGLE_SHEET_URL, {
+            method: 'POST',
+            mode: 'no-cors', // CORS 에러 방지 (응답은 확인 불가하지만 저장은 정상 작동)
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+
+        // no-cors 모드에서는 응답을 읽을 수 없음 (정상 동작)
+        console.log('✅ 구글 시트 저장 요청 완료 (no-cors 모드)');
+
+    } catch (error) {
+        console.error('⚠️ 구글 시트 저장 실패:', error);
+        console.error('   - 에러 이름:', error.name);
+        console.error('   - 에러 메시지:', error.message);
+        // 실패해도 번역 기능은 계속 동작 (저장만 실패)
+    }
 }

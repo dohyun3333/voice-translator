@@ -185,7 +185,14 @@ window.onload = async function() {
     } catch (error) {
         console.error('오디오 장치 로드 실패:', error);
         const t = i18n[uiLanguage];
-        updateStatus(t.alertBrowserNotSupported || '마이크 권한 필요');
+
+        // 에러 발생 시 드롭다운에 기본 메시지라도 표시
+        const select = document.getElementById('audioSource');
+        if (select && select.innerHTML === '') {
+            select.innerHTML = '<option value="">❌ ' + (uiLanguage === 'ko' ? '장치 로드 실패' : 'デバイス読み込み失敗') + '</option>';
+        }
+
+        updateStatus(uiLanguage === 'ko' ? '마이크 권한 필요' : 'マイク権限必要');
     }
 
     // DeepL API 키 복원
@@ -477,6 +484,8 @@ async function refreshAudioDevices() {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         console.error('❌ 이 브라우저는 MediaDevices API를 지원하지 않습니다!');
         const t = i18n[uiLanguage];
+        select.innerHTML = '<option value="">❌ ' + (uiLanguage === 'ko' ? '브라우저 미지원' : 'ブラウザ未対応') + '</option>';
+        updateStatus(uiLanguage === 'ko' ? '브라우저 미지원' : 'ブラウザ未対応');
         alert(t.alertBrowserNotSupported);
         return;
     }

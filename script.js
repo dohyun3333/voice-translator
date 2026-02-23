@@ -10,7 +10,8 @@ let lastInterimText = '';  // 마지막 중간 텍스트 저장
 let isLanguageSwitching = false;  // 언어 전환 중 플래그
 // 회사 제공 DeepL API 키 (기본값)
 const DEFAULT_DEEPL_API_KEY = '2bc6b0c2-115a-4fb9-841e-315aaf7968c5';
-let deeplApiKey = localStorage.getItem('deeplApiKey') || DEFAULT_DEEPL_API_KEY;
+// 하드코딩 키 강제 사용 (localStorage 무시)
+let deeplApiKey = DEFAULT_DEEPL_API_KEY;
 let listenLanguage = localStorage.getItem('listenLanguage') || 'ja';  // 기본값: 일본어
 let historyData = [];  // 현재 세션의 히스토리 데이터 배열
 let historyIdCounter = 0;  // 고유 ID 카운터

@@ -1064,39 +1064,63 @@ function displayNetworkInfo() {
     }
 
     const data = window.networkData;
+    const currentUrl = window.location.origin;
+    const isKoyeb = currentUrl.includes('koyeb.app');
 
     // 주소 목록 생성
-    let html = '<div style="font-size: 11px; color: #6b7280; margin-bottom: 6px;">같은 와이파이의 다른 기기에서 접속:</div>';
+    let html = '';
 
-    if (data.localAddresses && data.localAddresses.length > 0) {
-        data.localAddresses.forEach((addr, index) => {
-            // HTTPS 주소만 표시 (마이크 사용 가능)
-            if (addr.httpsUrl) {
-                html += `
-                    <div class="network-address-item" style="background: #ecfdf5; border: 1px solid #10b981;">
-                        <div style="flex: 1; min-width: 0;">
-                            <div style="font-size: 10px; color: #059669;">🎤 ${addr.interface} (마이크 사용 가능)</div>
-                            <div style="font-family: monospace; font-size: 11px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis;">${addr.httpsUrl}</div>
-                        </div>
-                        <button onclick="copyToClipboard('${addr.httpsUrl}')" class="copy-btn">복사</button>
-                    </div>
-                `;
-
-                // 첫 번째 HTTPS 주소의 QR 코드 생성
-                if (index === 0) {
-                    generateQRCode(addr.httpsUrl);
-                }
-            }
-        });
-
-        // HTTPS 안내 메시지
-        html += `<div style="font-size: 10px; color: #6b7280; margin-top: 8px; padding: 6px; background: #fef3c7; border-radius: 4px;">
-            ⚠️ 접속 시 "안전하지 않음" 경고가 표시되면<br>
-            → '고급' → '안전하지 않은 사이트로 이동' 클릭
-        </div>`;
+    // Koyeb/클라우드 환경인 경우 현재 URL 표시
+    if (isKoyeb) {
+        html += '<div style="font-size: 11px; color: #6b7280; margin-bottom: 6px;">🌐 인터넷 어디서나 접속:</div>';
+        html += `
+            <div class="network-address-item" style="background: #dbeafe; border: 1px solid #3b82f6;">
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-size: 10px; color: #1e40af;">🌍 클라우드 URL (마이크 사용 가능)</div>
+                    <div style="font-family: monospace; font-size: 11px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis;">${currentUrl}</div>
+                </div>
+                <button onclick="copyToClipboard('${currentUrl}')" class="copy-btn">복사</button>
+            </div>
+        `;
+        // 클라우드 URL의 QR 코드 생성
+        generateQRCode(currentUrl);
+        html += '<div style="font-size: 10px; color: #6b7280; margin-top: 8px; padding: 6px; background: #e0e7ff; border-radius: 4px;">💡 QR 코드를 스캔하여 휴대폰에서 바로 접속하세요!</div>';
     } else {
-        html += '<p style="color: #ef4444; font-size: 11px;">로컬 IP 주소를 찾을 수 없습니다.</p>';
-        html += '<p style="font-size: 10px; color: #6b7280;">와이파이에 연결되어 있는지 확인해주세요.</p>';
+        // 로컬 환경인 경우
+        html += '<div style="font-size: 11px; color: #6b7280; margin-bottom: 6px;">같은 와이파이의 다른 기기에서 접속:</div>';
+
+        if (data.localAddresses && data.localAddresses.length > 0) {
+            data.localAddresses.forEach((addr, index) => {
+                // HTTPS 주소만 표시 (마이크 사용 가능)
+                if (addr.httpsUrl) {
+                    html += `
+                        <div class="network-address-item" style="background: #ecfdf5; border: 1px solid #10b981;">
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-size: 10px; color: #059669;">🎤 ${addr.interface} (마이크 사용 가능)</div>
+                                <div style="font-family: monospace; font-size: 11px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis;">${addr.httpsUrl}</div>
+                            </div>
+                            <button onclick="copyToClipboard('${addr.httpsUrl}')" class="copy-btn">복사</button>
+                        </div>
+                    `;
+
+                    // 첫 번째 HTTPS 주소의 QR 코드 생성
+                    if (index === 0) {
+                        generateQRCode(addr.httpsUrl);
+                    }
+                }
+            });
+
+            // HTTPS 안내 메시지
+            html += `<div style="font-size: 10px; color: #6b7280; margin-top: 8px; padding: 6px; background: #fef3c7; border-radius: 4px;">
+                ⚠️ 접속 시 "안전하지 않음" 경고가 표시되면<br>
+                → '고급' → '안전하지 않은 사이트로 이동' 클릭
+            </div>`;
+        } else {
+            html += '<p style="color: #ef4444; font-size: 11px;">로컬 IP 주소를 찾을 수 없습니다.</p>';
+            html += '<p style="font-size: 10px; color: #6b7280;">와이파이에 연결되어 있는지 확인해주세요.</p>';
+            // 로컬 환경이지만 IP가 없는 경우 현재 URL의 QR 코드라도 표시
+            generateQRCode(currentUrl);
+        }
     }
 
     addressesDiv.innerHTML = html;

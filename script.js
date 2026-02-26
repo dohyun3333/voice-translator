@@ -7,6 +7,7 @@ let selectedDeviceId = localStorage.getItem('selectedAudioDevice') || '';
 let permissionGranted = localStorage.getItem('audioPermissionGranted') === 'true';
 let autoTranslateTimer = null;  // 자동 번역 타이머
 let lastInterimText = '';  // 마지막 중간 텍스트 저장
+let lastTranslatedText = '';  // 마지막으로 번역한 텍스트 (중복 방지용)
 let isLanguageSwitching = false;  // 언어 전환 중 플래그
 // 회사 제공 DeepL API 키 (기본값)
 const DEFAULT_DEEPL_API_KEY = '2bc6b0c2-115a-4fb9-841e-315aaf7968c5';
@@ -771,6 +772,10 @@ async function startListening() {
 
     console.log('API 키 확인 완료');
 
+    // 중복 방지 변수 초기화 (새로운 인식 시작)
+    lastTranslatedText = '';
+    lastInterimText = '';
+
     // 새 세션 시작 (언어 전환 중이 아닐 때만)
     if (!isLanguageSwitching) {
         try {
@@ -938,6 +943,7 @@ function stopListening() {
         autoTranslateTimer = null;
     }
     lastInterimText = '';
+    lastTranslatedText = '';  // 중복 방지 변수 초기화
 
     if (recognition) {
         recognition.stop();
@@ -974,6 +980,12 @@ function stopListening() {
 async function translateText(sourceText) {
     // 빈 텍스트 무시
     if (!sourceText.trim()) {
+        return;
+    }
+
+    // 중복 번역 방지: 이미 번역한 텍스트인지 확인
+    if (sourceText.trim() === lastTranslatedText.trim()) {
+        console.log('⚠️ 중복 번역 방지:', sourceText);
         return;
     }
 
@@ -1022,6 +1034,10 @@ async function translateText(sourceText) {
             detectedLang: detectedLang,
             sessionId: currentSessionId
         });
+
+        // 번역 성공 시 마지막 번역 텍스트 저장 (중복 방지용)
+        lastTranslatedText = sourceText.trim();
+        console.log('✅ 번역 완료, 마지막 텍스트 저장:', lastTranslatedText);
 
         const langName = listenLanguage === 'ja' ? '일본어' : '한국어';
         updateStatus(`${langName} 인식 중`);
